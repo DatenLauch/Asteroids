@@ -1,0 +1,27 @@
+# Dependency directories
+node_modules/
+/dist/
+/build/
+/out/
+
+# Environment files
+.env
+
+# Lock files
+package-lock.json
+yarn.lock
+
+# User-specific files
+.DS_Store
+.idea/
+.vscode/
+
+# Log files and temporary files
+*.log
+*.tmp
+*.temp
+
+# Other editor-specific or miscellaneous files
+*.swp
+*.swo
+Thumbs.db

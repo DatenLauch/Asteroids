@@ -1,0 +1,34 @@
+Asteroids in 3D
+
+Spielbarkeit: 
+--------------- Must have  
+	Von einem Anfang bis zu einem Ziel.
+	Was ist das Ziel? 
+	--> Alle Asteroids zerstören.
+	--> ODER Zeitlimit überleben.
+	--> ODER Endless Mode?
+
+Funktionalität:
+--------------- Must have  
+	o steuerbares Raumschiff 
+	o collisions mit Raumschiff, Asteroiden, und Missiles.
+	o Asteroids spawnt bei Zerstörung kleine Bruchstücke 
+--------------- Optional
+	o Gegnerisches Raumschiff(?)
+	o Pickups(?)
+	o Andere Missiles(?)
+	o Unterschiedliche Asteroids(?)
+
+Scoresystem: 
+--------------- Must have  
+	o Punkte
+--------------- Optional
+	o Zeitlimit(?) 
+	o HP/Leben(?) 
+
+Multimedia: 
+--------------- Optional gut als Bonus.
+	o 3D Assets?
+	o Audio + Sound(?)
+	o UI Elemente?
+
