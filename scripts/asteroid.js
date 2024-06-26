@@ -1,6 +1,7 @@
 import * as THREE from '/node_modules/three/build/three.module.js';
+import { GLTFLoader } from '/node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 
-export class Asteroid extends THREE.Object3D {
+class Asteroid extends THREE.Object3D {
 
     constructor() {
         super();
@@ -9,15 +10,31 @@ export class Asteroid extends THREE.Object3D {
         this.axesHelper = new THREE.AxesHelper(5);
         this.add(this.axesHelper);
 
-        // Mesh stuff
-        this.geometry = new THREE.IcosahedronGeometry(1.0, 2);
-        this.material = new THREE.MeshBasicMaterial({ color: 0x4c3228 });
-        this.mesh = new THREE.Mesh(this.geometry, this.material);
-        this.add(this.mesh);
+        // Mesh
+        this.mesh;
+        const loader = new GLTFLoader();
+        loader.load('/models/asteroid/scene.gltf',
+            (gltf) => {
+                this.mesh = gltf.scene;
+
+                this.mesh.position.set(0, 0, 0);
+                this.mesh.scale.set(1, 1, 1);
+                this.add(this.mesh);
+                this.asteroidLoaded = true;
+                console.log('Asteroid loaded successfully');
+            },
+            function (xhr) {
+                const asteroidLoadingProgress = (xhr.loaded / xhr.total) * 100;
+                console.log(`Loading asteroid: ${Math.round(asteroidLoadingProgress)}%`);
+            },
+            function (error) {
+                console.error('An error happened while loading asteroid.', error);
+            }
+        );
 
         // Speed
-        this.minSpeed = -0.02;
-        this.maxSpeed = 0.02;
+        this.minSpeed = 0;
+        this.maxSpeed = 0.1;
         this.speed = Math.random() * (this.maxSpeed - this.minSpeed) + this.minSpeed;
 
         // Velocity
@@ -26,7 +43,7 @@ export class Asteroid extends THREE.Object3D {
 
         // Rotation
         this.rotationAxis = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
-        this.rotationSpeed = Math.random() * 0.05;
+        this.rotationSpeed = Math.random() * 0.5;
         console.log(this.rotationAxis);
     }
 
@@ -35,6 +52,14 @@ export class Asteroid extends THREE.Object3D {
     }
 
     rotate() {
-        this.mesh.rotateOnAxis(this.rotationAxis, this.rotationSpeed);
+        this.rotateOnAxis(this.rotationAxis, this.rotationSpeed);
+    }
+
+    update(){
+        if(this.asteroidLoaded){
+            this.move();
+            this.rotate();  
+        }
     }
 }
+export default Asteroid;

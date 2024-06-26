@@ -18,6 +18,8 @@ This work is based on "Space Fighter" (https://sketchfab.com/3d-models/space-fig
 
 Asteroids
 
+This work is based on "Asteroids Pack (rocky version)" (https://sketchfab.com/3d-models/asteroids-pack-rocky-version-adde1ecf129e4509be8af61b84bafa85) by SebastianSosnowski (https://sketchfab.com/SebastianSosnowski) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+
 
 Missiles
 

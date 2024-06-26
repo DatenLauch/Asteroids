@@ -1,7 +1,7 @@
 import * as THREE from '/node_modules/three/build/three.module.js';
 import { GLTFLoader } from '/node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 import Spaceship from '/scripts/spaceship.js';
-import { Asteroid } from '/scripts/asteroid.js';
+import Asteroid from '/scripts/asteroid.js';
 
 /* Project Setup */
 
@@ -31,6 +31,8 @@ function onWindowResize() {
 const light = new THREE.DirectionalLight(0xffffff, 1);
 light.position.set(5, 5, 5).normalize();
 scene.add(light);
+const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+scene.add(ambientLight);
 
 
 // Skybox
@@ -41,7 +43,7 @@ loader.load('/models/skybox/scene.gltf',
         skybox = gltf.scene;
         scene.add(skybox);
         //spaceship.add(skybox.scene);
-           console.log('skybox loaded successfully');
+        console.log('skybox loaded successfully');
     },
     function (xhr) {
         const skyboxLoadingProgress = (xhr.loaded / xhr.total) * 100;
@@ -91,8 +93,7 @@ function update() {
     // Movement
     spaceship.update();
     asteroids.forEach(asteroid => {
-        asteroid.move();
-        asteroid.rotate();
+        asteroid.update();
     });
     // Collisions
 

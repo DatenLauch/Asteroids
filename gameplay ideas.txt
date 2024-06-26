@@ -12,8 +12,8 @@ Funktionalität:
 --------------- Must have  
 	o steuerbares Raumschiff 
 	o collisions mit Raumschiff, Asteroiden, und Missiles.
-	o Asteroids spawnt bei Zerstörung kleine Bruchstücke 
 --------------- Optional
+	o Asteroids spawnt bei Zerstörung kleine Bruchstücke (?) nach Gespräch am 26.6 auf Optional erstmal auf Optional
 	o Gegnerisches Raumschiff(?)
 	o Pickups(?)
 	o Andere Missiles(?)
