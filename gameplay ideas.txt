@@ -32,3 +32,5 @@ Multimedia:
 	o Audio + Sound(?)
 	o UI Elemente?
 
+---------------------------------
+Considerations: Different control schemes more suited for 3D environment.

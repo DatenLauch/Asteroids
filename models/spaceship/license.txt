@@ -1,0 +1,11 @@
+Model Information:
+* title:	Space Fighter
+* source:	https://sketchfab.com/3d-models/space-fighter-7862be0a14a4455cb51e78db16c13ba7
+* author:	pirate8888 (https://sketchfab.com/pirate8888)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Space Fighter" (https://sketchfab.com/3d-models/space-fighter-7862be0a14a4455cb51e78db16c13ba7) by pirate8888 (https://sketchfab.com/pirate8888) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

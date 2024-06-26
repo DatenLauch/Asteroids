@@ -1,10 +1,13 @@
 import * as THREE from '/node_modules/three/build/three.module.js';
 import { GLTFLoader } from '/node_modules/three/examples/jsm/loaders/GLTFLoader.js';
-import { Spaceship } from '/scripts/spaceship.js';
+import Spaceship from '/scripts/spaceship.js';
 import { Asteroid } from '/scripts/asteroid.js';
 
+/* Project Setup */
+
 // Renderer 
-const renderer = new THREE.WebGLRenderer();
+const canvas = document.getElementById('canvas');
+const renderer = new THREE.WebGLRenderer({ canvas: canvas });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -13,7 +16,7 @@ const scene = new THREE.Scene();
 
 // Camera
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.z = 2;
+camera.position.z = 15;
 
 // Respond to windows resize
 window.addEventListener('resize', onWindowResize);
@@ -23,23 +26,41 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+// Light
+// placeholder for now
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(5, 5, 5).normalize();
+scene.add(light);
+
+
 // Skybox
+let skybox;
 const loader = new GLTFLoader();
 loader.load('/models/skybox/scene.gltf',
     (gltf) => {
-        scene.add(gltf.scene);
+        skybox = gltf.scene;
+        scene.add(skybox);
+        //spaceship.add(skybox.scene);
+           console.log('skybox loaded successfully');
     },
-    (xhr) => {
-        console.log((xhr.loaded / xhr.total * 100) + '% Skybox loaded');
+    function (xhr) {
+        const skyboxLoadingProgress = (xhr.loaded / xhr.total) * 100;
+        console.log(`Loading Skybox: ${Math.round(skyboxLoadingProgress)}%`);
     },
-    (error) => {
-        console.error('Error while loading skybox', error);
+    function (error) {
+        console.error('An error happened while loading skybox.', error);
     }
 );
 
-// Gamelogic
+/* Gamelogic */
 
-// helper function for easier random values
+// Spaceship 
+let spaceship = new Spaceship();
+spaceship.add(camera);
+camera.position.y = 5;
+scene.add(spaceship);
+
+
 function randomRange(min, max) {
     return Math.random() * (max - min) + min;
 }
@@ -62,24 +83,18 @@ for (let i = 0; i < asteroidAmount; i++) {
     asteroids.push(asteroid);
 }
 
-// Spaceship 
-const spaceship = new Spaceship;
-scene.add(spaceship);
-
-
-// Gameloop
 function update() {
     requestAnimationFrame(update);
 
-    // Gameloop
+    /* Gameloop */
+
+    // Movement
+    spaceship.update();
     asteroids.forEach(asteroid => {
         asteroid.move();
         asteroid.rotate();
     });
-
-
     // Collisions
-
 
     renderer.render(scene, camera);
 }

@@ -1,8 +1,297 @@
 import * as THREE from '/node_modules/three/build/three.module.js';
+import { GLTFLoader } from '/node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 
-export class Spaceship extends THREE.Object3D {
+class Spaceship extends THREE.Object3D {
 
     constructor() {
         super();
+        this.type = 'spaceship'
+
+        //Axeshelper
+        let axesHelper = new THREE.AxesHelper(5);
+        this.add(axesHelper);
+
+        // Mesh
+        this.mesh;
+        this.yAngleModelOffset = 180;
+        const loader = new GLTFLoader();
+        loader.load('/models/spaceship/scene.gltf',
+            (gltf) => {
+                this.mesh = gltf.scene;
+                this.mesh.position.set(0, 0, 0);
+                this.mesh.scale.set(0.5, 0.5, 0.5);
+                this.mesh.rotation.y = THREE.MathUtils.degToRad(this.yAngleModelOffset);
+                this.add(this.mesh);
+                this.spaceshipLoaded = true;
+                console.log('Spaceship loaded successfully');
+            },
+            function (xhr) {
+                const shipLoadingProgress = (xhr.loaded / xhr.total) * 100;
+                console.log(`Loading spaceship: ${Math.round(shipLoadingProgress)}%`);
+            },
+            function (error) {
+                console.error('An error happened while loading spaceship.', error);
+            }
+        );
+
+        // Controls
+        this.keydownHandler = this.keydownHandler.bind(this);
+        this.keyupHandler = this.keyupHandler.bind(this);
+        this.mouseMoveHandler = this.mouseMoveHandler.bind(this);
+        this.canvas = document.querySelector('canvas');
+        this.areShipControlsEnabled = false;
+        this.enableShipControls();
+
+        // Speed
+        this.currentSpeed = 0;
+        this.maxSpeed = 0.5;
+        this.minSpeed = -this.maxSpeed;
+        this.velocity = new THREE.Vector3();
+        this.accelerationMagnitude = 0.005;
+        this.isMovingForward = false;
+        this.isMovingBackwards = false;
+
+        // Rotation
+        this.rotationSpeed = 0.02;
+        this.rollIncrement = 1;
+        this.maxRollAngle = 30;
+        this.pitchIncrement = 1;
+        this.maxPitchAngle = 5 + this.yAngleModelOffset;
+        this.isTurningLeft = false;
+        this.isTurningRight = false;
+        this.isTurningUp = false;
+        this.isTurningDown = false;
+    }
+
+    enableShipControls() {
+        document.addEventListener('keydown', this.keydownHandler);
+        document.addEventListener('keyup', this.keyupHandler);
+        document.addEventListener('mousemove', this.mouseMoveHandler);
+        this.canvas.requestPointerLock();
+        this.areShipControlsEnabled = true;
+    }
+
+    disableShipControls() {
+        document.removeEventListener('keydown', this.keydownHandler);
+        document.removeEventListener('keyup', this.keyupHandler);
+        document.removeEventListener('mousemove', this.mouseMoveHandler);
+        document.exitPointerLock();
+        this.areShipControlsEnabled = false;
+    }
+
+
+    isCursorLocked() {
+        return (document.pointerLockElement === canvas);
+    }
+
+    mouseMoveHandler(event) {
+        if (this.isCursorLocked) {
+            const deltaX = event.movementX;
+            const deltaY = event.movementY;
+            this.rotateWithMouse(deltaX, deltaY);
+        }
+    }
+
+    rotateWithMouse(deltaX, deltaY) {
+        if (deltaX < 0) {
+            this.isTurningRight = false;
+            this.isTurningLeft = true;
+        }
+        else if (deltaX > 0) {
+            this.isTurningLeft = false;
+            this.isTurningRight = true;
+        }
+        else if (deltaX === 0) {
+            this.isTurningRight = false;
+            this.isTurningLeft = false;
+        }
+        if (deltaY < 0) {
+            this.isTurningDown = false;
+            this.isTurningUp = true;
+        }
+        else if (deltaY > 0) {
+            this.isTurningUp = false;
+            this.isTurningDown = true;
+        }
+        else if (deltaY === 0) {
+            this.isTurningUp = false;
+            this.isTurningDown = false;
+        }
+        const deltaYaw = -deltaX * this.rotationSpeed;
+        const deltaPitch = -deltaY * this.rotationSpeed;
+        const quaternionYaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaYaw);
+        const quaternionPitch = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), deltaPitch);
+        this.quaternion.multiply(quaternionYaw).multiply(quaternionPitch);
+
+        clearTimeout(this.mouseMoveTimeout);
+        this.mouseMoveTimeout = setTimeout(() => {
+            this.isTurningLeft = false;
+            this.isTurningRight = false;
+            this.isTurningUp = false;
+            this.isTurningDown = false;
+        }, 100);
+    }
+
+    rotateSpaceship() {
+
+        // roll = left and right (one wing goes up and other down)
+        this.rollAngle = THREE.MathUtils.radToDeg(this.mesh.rotation.z);
+        this.rollAngle = Math.round(this.rollAngle);
+
+        if (this.isTurningRight) {
+            if (this.rollAngle < this.maxRollAngle) {
+                this.rollAngle += this.rollIncrement;
+                this.rollAngle = Math.min(this.rollAngle, this.maxRollAngle);
+            }
+        }
+        else if (this.isTurningLeft) {
+            if (this.rollAngle > -this.maxRollAngle) {
+                this.rollAngle -= this.rollIncrement;
+                this.rollAngle = Math.max(this.rollAngle, -this.maxRollAngle);
+            }
+        }
+        else if (!this.isTurningRight && !this.isTurningLeft) {
+            if (this.rollAngle > 0) {
+                this.rollAngle -= this.rollIncrement;
+                this.rollAngle = Math.max(this.rollAngle, -this.maxRollAngle);
+            }
+            else if (this.rollAngle < 0) {
+                this.rollAngle += this.rollIncrement;
+                this.rollAngle = Math.min(this.rollAngle, this.maxRollAngle);
+            }
+        }
+        this.mesh.rotation.z = THREE.MathUtils.degToRad(this.rollAngle);
+
+        // pitch = up and down (nose and tail)
+        this.pitchAngle = THREE.MathUtils.radToDeg(this.mesh.rotation.x);
+        this.pitchAngle = Math.round(this.pitchAngle);
+
+        if (this.isTurningUp) {
+            if ((this.pitchAngle + this.yAngleModelOffset) < this.maxPitchAngle) {
+                console.log('up: ' + this.pitchAngle + '  ' + this.maxPitchAngle);
+                this.pitchAngle += this.pitchIncrement;
+                this.pitchAngle = Math.min(this.pitchAngle, this.maxPitchAngle);
+            }
+        }
+
+        else if (this.isTurningDown) {
+            if ((this.pitchAngle - this.yAngleModelOffset) > (-this.maxPitchAngle - 15)) {
+                console.log('down: ' + this.pitchAngle + '  ' + this.maxPitchAngle);
+                this.pitchAngle -= this.pitchIncrement;
+                this.rollAngle = Math.max(this.rollAngle, -this.maxRollAngle);
+            }
+        }
+
+        else if (!this.isTurningUp && !this.isTurningDown) {
+            if (this.pitchAngle > 0) {
+                this.pitchAngle -= this.rollIncrement;
+                this.pitchAngle = Math.max(this.pitchAngle, -this.maxPitchAngle);
+            }
+            else if (this.pitchAngle < 0) {
+                this.pitchAngle += this.pitchIncrement;
+                this.pitchAngle = Math.min(this.pitchAngle, this.maxPitchAngle);
+            }
+        }
+        this.mesh.rotation.x = THREE.MathUtils.degToRad(this.pitchAngle);
+    }
+
+    keydownHandler(event) {
+        if (this.areShipControlsEnabled) {
+            switch (event.key) {
+                case 'w':
+                case 'ArrowUp':
+                    if (!this.isCursorLocked())
+                        this.canvas.requestPointerLock();
+                    this.isMovingBackwards = false;
+                    this.isMovingForward = true;
+                    break;
+
+                case 's':
+                case 'ArrowDown':
+                    if (!this.isCursorLocked())
+                        this.canvas.requestPointerLock();
+                    this.isMovingForward = false;
+                    this.isMovingBackwards = true;
+                    break;
+
+                case 'a':
+                case 'ArrowLeft':
+                    this.isTurningRight = false;
+                    this.isTurningLeft = true;
+                    //this.rotation.y += this.rotationSpeed;
+                    break;
+
+                case 'd':
+                case 'ArrowRight':
+                    this.isTurningLeft = false;
+                    this.isTurningRight = true;
+                    //this.rotation.y -= this.rotationSpeed;
+                    break;
+
+                case ' ':
+                    this.IsShooting = true;
+                    break;
+            }
+        }
+    }
+
+    keyupHandler(event) {
+        if (this.areShipControlsEnabled) {
+            switch (event.key) {
+                case 'w':
+                case 'ArrowUp':
+                    this.isMovingForward = false;
+                    break;
+
+                case 's':
+                case 'ArrowDown':
+                    this.isMovingBackwards = false;
+                    break;
+
+                case 'a':
+                case 'ArrowLeft':
+                    this.isTurningLeft = false;
+                    break;
+
+                case 'd':
+                case 'ArrowRight':
+                    this.isTurningRight = false;
+                    break;
+
+                case ' ':
+                    this.isShooting = false;
+                    break;
+            }
+        }
+    }
+
+    positionSpaceship() {
+        if (this.isMovingForward || this.isMovingBackwards) {
+            if (this.currentSpeed > this.maxSpeed)
+                this.currentSpeed = this.maxSpeed;
+            else if (this.currentSpeed < this.minSpeed)
+                this.currentSpeed = this.minSpeed;
+
+            else if (this.isMovingForward) {
+                if (this.currentSpeed < this.maxSpeed)
+                    this.currentSpeed = this.currentSpeed + this.accelerationMagnitude;
+            }
+            else if (this.isMovingBackwards) {
+                if (this.currentSpeed > this.minSpeed)
+                    this.currentSpeed = this.currentSpeed - this.accelerationMagnitude;
+            }
+        }
+        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.quaternion).normalize();
+        this.velocity.copy(forward);
+        this.velocity.multiplyScalar(this.currentSpeed);
+        this.position.add(this.velocity);
+    }
+
+    update() {
+        if (this.spaceshipLoaded) {
+            this.positionSpaceship();
+            this.rotateSpaceship();
+        }
     }
 }
+export default Spaceship;
