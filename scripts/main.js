@@ -2,7 +2,7 @@ import * as THREE from '/node_modules/three/build/three.module.js';
 import { GLTFLoader } from '/node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 import Spaceship from '/scripts/spaceship.js';
 import Asteroid from '/scripts/asteroid.js';
-
+import Skybox from '/scripts/skybox.js';
 /* Project Setup */
 
 // Renderer 
@@ -36,23 +36,8 @@ scene.add(ambientLight);
 
 
 // Skybox
-let skybox;
-const loader = new GLTFLoader();
-loader.load('/models/skybox/scene.gltf',
-    (gltf) => {
-        skybox = gltf.scene;
-        scene.add(skybox);
-        //spaceship.add(skybox.scene);
-        console.log('skybox loaded successfully');
-    },
-    function (xhr) {
-        const skyboxLoadingProgress = (xhr.loaded / xhr.total) * 100;
-        console.log(`Loading Skybox: ${Math.round(skyboxLoadingProgress)}%`);
-    },
-    function (error) {
-        console.error('An error happened while loading skybox.', error);
-    }
-);
+const skyboxGLTFPath = '/models/skybox/scene.gltf';
+let skybox = new Skybox(scene, skyboxGLTFPath);
 
 /* Gamelogic */
 
@@ -90,13 +75,11 @@ function update() {
 
     /* Gameloop */
 
-    // Movement
+    skybox.update();
     spaceship.update();
     asteroids.forEach(asteroid => {
         asteroid.update();
     });
-    // Collisions
-
     renderer.render(scene, camera);
 }
 update();
