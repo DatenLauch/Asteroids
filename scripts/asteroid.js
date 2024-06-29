@@ -1,36 +1,22 @@
 import * as THREE from '/node_modules/three/build/three.module.js';
-import { GLTFLoader } from '/node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+import GLTFLoaderComponent from '/scripts/components/GLTFLoaderComponent.js';
 
-class Asteroid extends THREE.Object3D {
+export default class Asteroid extends THREE.Object3D {
 
-    constructor() {
+    constructor(GLTFPath) {
         super();
         this.type = 'asteroid';
+
+        // Model and Mesh
+        this.GLTFPath = GLTFPath; //'/models/asteroid/scene.gltf'
+        this.GLTFLoader = new GLTFLoaderComponent(this.GLTFPath);
+        this.model = null;
+        this.mesh = null;
+        this.isAsteroidLoaded = false;
+
         //Axeshelper to keep track of object position and rotation
         this.axesHelper = new THREE.AxesHelper(5);
         this.add(this.axesHelper);
-
-        // Mesh
-        this.mesh;
-        const loader = new GLTFLoader();
-        loader.load('/models/asteroid/scene.gltf',
-            (gltf) => {
-                this.mesh = gltf.scene;
-
-                this.mesh.position.set(0, 0, 0);
-                this.mesh.scale.set(1, 1, 1);
-                this.add(this.mesh);
-                this.asteroidLoaded = true;
-                console.log('Asteroid loaded successfully');
-            },
-            function (xhr) {
-                const asteroidLoadingProgress = (xhr.loaded / xhr.total) * 100;
-                console.log(`Loading asteroid: ${Math.round(asteroidLoadingProgress)}%`);
-            },
-            function (error) {
-                console.error('An error happened while loading asteroid.', error);
-            }
-        );
 
         // Speed
         this.minSpeed = 0;
@@ -44,7 +30,30 @@ class Asteroid extends THREE.Object3D {
         // Rotation
         this.rotationAxis = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
         this.rotationSpeed = Math.random() * 0.5;
-        console.log(this.rotationAxis);
+    }
+
+    async useGLTFLoader() {
+        if (!this.model)
+            try {
+                this.model = await this.GLTFLoader.startLoaderAsynchronously();
+                this.mesh = this.GLTFLoader.findMesh();
+            }
+            catch (error) {
+                console.error('GLTFLoaderComponent encountered an error in Asteroid: ', error);
+            }
+    }
+
+    async initialSetup(){
+        try {
+            await this.useGLTFLoader();
+            this.add(this.model);
+            this.model.position.set(0, 0, 0);
+            this.model.scale.set(0.5, 0.5, 0.5);
+            this.isAsteroidLoaded = true;
+        }
+        catch (error) {
+            console.error('Error while setting up Asteroid: ', error);
+        }
     }
 
     move() {
@@ -62,4 +71,3 @@ class Asteroid extends THREE.Object3D {
         }
     }
 }
-export default Asteroid;

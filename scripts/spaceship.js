@@ -1,38 +1,22 @@
 import * as THREE from '/node_modules/three/build/three.module.js';
-import { GLTFLoader } from '/node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+import GLTFLoaderComponent from '/scripts/components/GLTFLoaderComponent.js';
 
-class Spaceship extends THREE.Object3D {
+export default class Spaceship extends THREE.Object3D {
 
-    constructor() {
+    constructor(GLTFPath) {
         super();
-        this.type = 'spaceship'
+        this.type = 'spaceship';
 
-        //Axeshelper
+        // Model and Mesh
+        this.GLTFPath = GLTFPath; //'/models/spaceship/scene.gltf'
+        this.GLTFLoader = new GLTFLoaderComponent(this.GLTFPath);
+        this.model = null;
+        this.mesh = null;
+        this.isSpaceshipLoaded = false;
+
+        // Axeshelper
         let axesHelper = new THREE.AxesHelper(5);
         this.add(axesHelper);
-
-        // Mesh
-        this.mesh;
-        this.yAngleModelOffset = 180;
-        const loader = new GLTFLoader();
-        loader.load('/models/spaceship/scene.gltf',
-            (gltf) => {
-                this.mesh = gltf.scene;
-                this.mesh.position.set(0, 0, 0);
-                this.mesh.scale.set(0.5, 0.5, 0.5);
-                this.mesh.rotation.y = THREE.MathUtils.degToRad(this.yAngleModelOffset);
-                this.add(this.mesh);
-                this.spaceshipLoaded = true;
-                console.log('Spaceship loaded successfully');
-            },
-            function (xhr) {
-                const shipLoadingProgress = (xhr.loaded / xhr.total) * 100;
-                console.log(`Loading spaceship: ${Math.round(shipLoadingProgress)}%`);
-            },
-            function (error) {
-                console.error('An error happened while loading spaceship.', error);
-            }
-        );
 
         // Controls
         this.keydownHandler = this.keydownHandler.bind(this);
@@ -40,7 +24,6 @@ class Spaceship extends THREE.Object3D {
         this.mouseMoveHandler = this.mouseMoveHandler.bind(this);
         this.canvas = document.querySelector('canvas');
         this.areShipControlsEnabled = false;
-        this.enableShipControls();
 
         // Speed
         this.currentSpeed = 0;
@@ -53,14 +36,41 @@ class Spaceship extends THREE.Object3D {
 
         // Rotation
         this.rotationSpeed = 0.02;
-        this.rollIncrement = 1;
+        this.rollIncrement = 2;
         this.maxRollAngle = 30;
         this.pitchIncrement = 1;
+        this.yAngleModelOffset = 180;
         this.maxPitchAngle = 5 + this.yAngleModelOffset;
         this.isTurningLeft = false;
         this.isTurningRight = false;
         this.isTurningUp = false;
         this.isTurningDown = false;
+    }
+
+    async useGLTFLoader() {
+        if (!this.model)
+            try {
+                this.model = await this.GLTFLoader.startLoaderAsynchronously();
+                this.mesh = this.GLTFLoader.findMesh();
+            }
+            catch (error) {
+                console.error('GLTFLoaderComponent encountered an error in Spaceship: ', error);
+            }
+    }
+
+    async initialSetup() {
+        try {
+            await this.useGLTFLoader();
+            this.add(this.model);
+            this.model.position.set(0, 0, 0);
+            this.model.scale.set(0.5, 0.5, 0.5);
+            this.model.rotation.y = THREE.MathUtils.degToRad(this.yAngleModelOffset);
+            this.isSpaceshipLoaded = true;
+            this.enableShipControls();
+        }
+        catch (error) {
+            console.error('Error while setting up Spaceship: ', error);
+        }
     }
 
     enableShipControls() {
@@ -78,7 +88,6 @@ class Spaceship extends THREE.Object3D {
         document.exitPointerLock();
         this.areShipControlsEnabled = false;
     }
-
 
     isCursorLocked() {
         return (document.pointerLockElement === canvas);
@@ -101,10 +110,10 @@ class Spaceship extends THREE.Object3D {
             this.isTurningLeft = false;
             this.isTurningRight = true;
         }
-        else if (deltaX === 0) {
+        /*else if (deltaX === 0) {
             this.isTurningRight = false;
             this.isTurningLeft = false;
-        }
+        }*/
         if (deltaY < 0) {
             this.isTurningDown = false;
             this.isTurningUp = true;
@@ -113,10 +122,10 @@ class Spaceship extends THREE.Object3D {
             this.isTurningUp = false;
             this.isTurningDown = true;
         }
-        else if (deltaY === 0) {
+        /*else if (deltaY === 0) {
             this.isTurningUp = false;
             this.isTurningDown = false;
-        }
+        }*/
         const deltaYaw = -deltaX * this.rotationSpeed;
         const deltaPitch = -deltaY * this.rotationSpeed;
         const quaternionYaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaYaw);
@@ -129,13 +138,12 @@ class Spaceship extends THREE.Object3D {
             this.isTurningRight = false;
             this.isTurningUp = false;
             this.isTurningDown = false;
-        }, 100);
+        }, 30);
     }
 
     rotateSpaceship() {
-
         // roll = left and right (one wing goes up and other down)
-        this.rollAngle = THREE.MathUtils.radToDeg(this.mesh.rotation.z);
+        this.rollAngle = THREE.MathUtils.radToDeg(this.model.rotation.z);
         this.rollAngle = Math.round(this.rollAngle);
 
         if (this.isTurningRight) {
@@ -160,15 +168,14 @@ class Spaceship extends THREE.Object3D {
                 this.rollAngle = Math.min(this.rollAngle, this.maxRollAngle);
             }
         }
-        this.mesh.rotation.z = THREE.MathUtils.degToRad(this.rollAngle);
+        this.model.rotation.z = THREE.MathUtils.degToRad(this.rollAngle);
 
         // pitch = up and down (nose and tail)
-        this.pitchAngle = THREE.MathUtils.radToDeg(this.mesh.rotation.x);
+        this.pitchAngle = THREE.MathUtils.radToDeg(this.model.rotation.x);
         this.pitchAngle = Math.round(this.pitchAngle);
 
         if (this.isTurningUp) {
             if ((this.pitchAngle + this.yAngleModelOffset) < this.maxPitchAngle) {
-                console.log('up: ' + this.pitchAngle + '  ' + this.maxPitchAngle);
                 this.pitchAngle += this.pitchIncrement;
                 this.pitchAngle = Math.min(this.pitchAngle, this.maxPitchAngle);
             }
@@ -176,7 +183,6 @@ class Spaceship extends THREE.Object3D {
 
         else if (this.isTurningDown) {
             if ((this.pitchAngle - this.yAngleModelOffset) > (-this.maxPitchAngle - 15)) {
-                console.log('down: ' + this.pitchAngle + '  ' + this.maxPitchAngle);
                 this.pitchAngle -= this.pitchIncrement;
                 this.rollAngle = Math.max(this.rollAngle, -this.maxRollAngle);
             }
@@ -192,7 +198,7 @@ class Spaceship extends THREE.Object3D {
                 this.pitchAngle = Math.min(this.pitchAngle, this.maxPitchAngle);
             }
         }
-        this.mesh.rotation.x = THREE.MathUtils.degToRad(this.pitchAngle);
+        this.model.rotation.x = THREE.MathUtils.degToRad(this.pitchAngle);
     }
 
     keydownHandler(event) {
@@ -214,20 +220,6 @@ class Spaceship extends THREE.Object3D {
                     this.isMovingBackwards = true;
                     break;
 
-                case 'a':
-                case 'ArrowLeft':
-                    this.isTurningRight = false;
-                    this.isTurningLeft = true;
-                    //this.rotation.y += this.rotationSpeed;
-                    break;
-
-                case 'd':
-                case 'ArrowRight':
-                    this.isTurningLeft = false;
-                    this.isTurningRight = true;
-                    //this.rotation.y -= this.rotationSpeed;
-                    break;
-
                 case ' ':
                     this.IsShooting = true;
                     break;
@@ -246,16 +238,6 @@ class Spaceship extends THREE.Object3D {
                 case 's':
                 case 'ArrowDown':
                     this.isMovingBackwards = false;
-                    break;
-
-                case 'a':
-                case 'ArrowLeft':
-                    this.isTurningLeft = false;
-                    break;
-
-                case 'd':
-                case 'ArrowRight':
-                    this.isTurningRight = false;
                     break;
 
                 case ' ':
@@ -288,10 +270,9 @@ class Spaceship extends THREE.Object3D {
     }
 
     update() {
-        if (this.spaceshipLoaded) {
+        if (this.isSpaceshipLoaded) {
             this.positionSpaceship();
             this.rotateSpaceship();
         }
     }
 }
-export default Spaceship;
