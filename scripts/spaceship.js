@@ -1,22 +1,12 @@
 import * as THREE from '/node_modules/three/build/three.module.js';
-import GLTFLoaderComponent from '/scripts/components/GLTFLoaderComponent.js';
 
 export default class Spaceship extends THREE.Object3D {
 
-    constructor(GLTFPath) {
+    constructor(model) {
         super();
         this.type = 'spaceship';
-
-        // Model and Mesh
-        this.GLTFPath = GLTFPath; //'/models/spaceship/scene.gltf'
-        this.GLTFLoader = new GLTFLoaderComponent(this.GLTFPath);
-        this.model = null;
-        this.mesh = null;
-        this.isSpaceshipLoaded = false;
-
-        // Axeshelper
-        let axesHelper = new THREE.AxesHelper(5);
-        this.add(axesHelper);
+        this.model = model;
+        this.isSpaceshipReady = false;
 
         // Controls
         this.keydownHandler = this.keydownHandler.bind(this);
@@ -47,30 +37,13 @@ export default class Spaceship extends THREE.Object3D {
         this.isTurningDown = false;
     }
 
-    async useGLTFLoader() {
-        if (!this.model)
-            try {
-                this.model = await this.GLTFLoader.startLoaderAsynchronously();
-                this.mesh = this.GLTFLoader.findMesh();
-            }
-            catch (error) {
-                console.error('GLTFLoaderComponent encountered an error in Spaceship: ', error);
-            }
-    }
-
-    async initialSetup() {
-        try {
-            await this.useGLTFLoader();
-            this.add(this.model);
-            this.model.position.set(0, 0, 0);
-            this.model.scale.set(0.5, 0.5, 0.5);
-            this.model.rotation.y = THREE.MathUtils.degToRad(this.yAngleModelOffset);
-            this.isSpaceshipLoaded = true;
-            this.enableShipControls();
-        }
-        catch (error) {
-            console.error('Error while setting up Spaceship: ', error);
-        }
+    setupSpaceship() {
+        this.add(this.model);
+        this.model.position.set(0, 0, 0);
+        this.model.scale.set(0.5, 0.5, 0.5);
+        this.model.rotation.y = THREE.MathUtils.degToRad(this.yAngleModelOffset);
+        this.enableShipControls();
+        this.isSpaceshipReady = true;
     }
 
     enableShipControls() {
@@ -270,7 +243,7 @@ export default class Spaceship extends THREE.Object3D {
     }
 
     update() {
-        if (this.isSpaceshipLoaded) {
+        if (this.isSpaceshipReady) {
             this.positionSpaceship();
             this.rotateSpaceship();
         }

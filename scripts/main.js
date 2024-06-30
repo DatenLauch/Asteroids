@@ -1,10 +1,12 @@
 import * as THREE from '/node_modules/three/build/three.module.js';
+import { GLTFLoader } from '/node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 import Spaceship from '/scripts/spaceship.js';
 import Asteroid from '/scripts/asteroid.js';
 import Skybox from '/scripts/skybox.js';
 
 class Main {
     constructor() {
+        this.GLTFLoader = new GLTFLoader();
         this.setupRenderer();
         this.setupScene();
         this.setupGame();
@@ -17,7 +19,6 @@ class Main {
         this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(this.renderer.domElement);
-
         this.onWindowResize = this.onWindowResize.bind(this);
         window.addEventListener('resize', this.onWindowResize);
     }
@@ -45,68 +46,91 @@ class Main {
 
     async setupGame() {
         this.initGamemode();
-        await Promise.all([
-            this.initSkybox(),
-            this.initSpaceship(),
-            this.initAsteroids(),
-        ]);
+        try {
+            await this.loadModels();
+        }
+        catch (error) {
+            console.error('Error while loading Models: ', error);
+        }
+        this.initSkybox();
+        this.initSpaceship();
+        this.initAsteroids();
         this.sceneManager = new THREE.Group();
         this.sceneManager.add(this.spaceship);
         this.sceneManager.add(this.skybox);
-        this.sceneManager.add(this.asteroidsGroup);
+        this.sceneManager.add(this.asteroidGroup);
         this.scene.add(this.sceneManager);
     }
 
-    async initSkybox() {
-        try {
-            this.skyboxGLTFPath = '/models/skybox/scene.gltf';
-            this.skybox = new Skybox(this.skyboxGLTFPath);
-            await this.skybox.initialSetup();
-        } catch (error) {
-            console.error('Error initializing skybox in main.js:', error);
-        }
-    }
-
-    async initSpaceship() {
-        try {
-            this.spaceshipGLTFPath = '/models/spaceship/scene.gltf';
-            this.spaceship = new Spaceship(this.spaceshipGLTFPath);
-            await this.spaceship.initialSetup();
-            this.spaceship.add(this.camera);
-            this.camera.position.y = 5;
-            this.camera.position.z = 15;
-            //this.spaceship.position.set();
-        } catch (error) {
-            console.error('Error initializing spaceship in main.js:', error);
-        }
-    }
-
-    async initAsteroids() {
-        try {
-            // Loading an asteroid once and then cloning it by asteroidsAmount of times. Grouping clones together and adding them to scene.
-            this.asteroidGLTFPath = '/models/asteroid/scene.gltf';
-            this.asteroid = new Asteroid(this.asteroidGLTFPath);
-            this.asteroidsGroup = new THREE.Group();
-            this.asteroidsAmount = 20;
-            await this.asteroid.initialSetup();
-            for (let i = 0; i < this.asteroidsAmount; i++) {
-                this.asteroidClone = this.asteroid.clone();
-                this.asteroidsGroup.add(this.asteroidClone);
-                this.asteroidClone.position.set(
-                    this.randomRange(-this.skybox.radius, this.skybox.radius),
-                    this.randomRange(-this.skybox.radius, this.skybox.radius),
-                    this.randomRange(-this.skybox.radius, this.skybox.radius));
-                this.asteroidClone.rotation.set(
-                    Math.random() * Math.PI * 2,
-                    Math.random() * Math.PI * 2,
-                    Math.random() * Math.PI * 2);
-            }
-        } catch (error) {
-            console.error('Error initializing asteroids in main.js:', error);
-        }
-    }
-
     initGamemode() {
+    }
+
+    async loadModels() {
+        try {
+            this.skyboxModel = await this.loadGLTFModel('/models/skybox/scene.gltf');
+            console.log('Skybox model loaded successfully:', this.skyboxModel);
+
+            this.spaceshipModel = await this.loadGLTFModel('/models/spaceship/scene.gltf');
+            console.log('Spaceship model loaded successfully:', this.spaceshipModel);
+
+            this.asteroidModel = await this.loadGLTFModel('/models/asteroid/scene.gltf');
+            console.log('Asteroid model loaded successfully:', this.asteroidModel);
+
+        } catch (error) {
+            console.error('Error loading models:', error);
+        }
+    }
+
+    async loadGLTFModel(path) {
+        return new Promise((resolve, reject) => {
+            this.GLTFLoader.load(path,
+                (gltf) => {
+                    const model = gltf.scene || gltf.scenes[0];
+                    resolve(model);
+                },
+                (xhr) => {
+                    const loadingProgress = (xhr.loaded / xhr.total) * 100;
+                    console.log(`Loading from path ${path}: ${Math.round(loadingProgress)}% `);
+                },
+                (error) => {
+                    console.error('Error loading model from GLTF file:', error);
+                    reject(error);
+                }
+            );
+        });
+    }
+
+    initSkybox() {
+        this.skybox = new Skybox(this.skyboxModel);
+        this.skybox.setupSkybox();
+        this.scene.add(this.skybox);
+    }
+
+    initSpaceship() {
+        this.spaceship = new Spaceship(this.spaceshipModel);
+        this.spaceship.setupSpaceship();
+        this.spaceship.add(this.camera);
+        this.camera.position.y = 5;
+        this.camera.position.z = 15;
+    }
+
+    initAsteroids() {
+        this.asteroidGroup = new THREE.Group();
+        this.asteroidAmount = 10;
+        
+        for (let i = 0; i < this.asteroidAmount; i++) {
+            this.asteroid = new Asteroid(this.asteroidModel);
+            this.asteroid.setupAsteroid();
+            this.asteroidGroup.add(this.asteroid);
+            this.asteroid.position.set(
+                this.randomRange(-this.skybox.radius + 50, this.skybox.radius - 50),
+                this.randomRange(-this.skybox.radius + 50, this.skybox.radius - 50),
+                this.randomRange(-this.skybox.radius + 50, this.skybox.radius - 50));
+            this.asteroid.rotation.set(
+                Math.random() * Math.PI * 2,
+                Math.random() * Math.PI * 2,
+                Math.random() * Math.PI * 2);
+        }
     }
 
     randomRange(min, max) {
@@ -122,14 +146,15 @@ class Main {
             this.skybox.update();
             //this.skybox.position.copy(this.spaceship.position);
         }
-        if (this.asteroidsGroup) {
-            this.asteroidsGroup.children.forEach(asteroid => {
+        if (this.asteroidGroup) {
+            this.asteroidGroup.children.forEach(asteroid => {
                 asteroid.update();
             });
         }
         this.renderer.render(this.scene, this.camera);
     }
 }
+
 document.addEventListener('DOMContentLoaded', () => {
-    new Main();
+    new Main(); 
 });
