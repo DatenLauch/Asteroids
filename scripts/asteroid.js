@@ -41,11 +41,12 @@ export default class Asteroid extends THREE.Object3D {
     }
 
     setupAsteroid() {
-        this.axesHelper = new THREE.AxesHelper();
+        this.axesHelper = new THREE.AxesHelper(10);
         this.add(this.axesHelper);
         this.randomizeAsteroidSize();
         this.randomizeModel();
         this.add(this.model);
+        this.model.position.set(0, 0, 0);
         this.model.scale.set(this.baseSize * this.asteroidSize, this.baseSize * this.asteroidSize, this.baseSize * this.asteroidSize);
         this.isAsteroidReady = true;
     }

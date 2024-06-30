@@ -7,6 +7,7 @@ export default class Spaceship extends THREE.Object3D {
         this.type = 'spaceship';
         this.model = model;
         this.isSpaceshipReady = false;
+        this.isShooting = false;
 
         // Controls
         this.keydownHandler = this.keydownHandler.bind(this);
@@ -194,7 +195,10 @@ export default class Spaceship extends THREE.Object3D {
                     break;
 
                 case ' ':
-                    this.IsShooting = true;
+                    if (!this.isSpacebarDown) {
+                        this.isSpacebarDown = true;
+                        this.isShooting = true;
+                    }
                     break;
             }
         }
@@ -215,6 +219,7 @@ export default class Spaceship extends THREE.Object3D {
 
                 case ' ':
                     this.isShooting = false;
+                    this.isSpacebarDown = false;
                     break;
             }
         }

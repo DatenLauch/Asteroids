@@ -1,6 +1,7 @@
 import * as THREE from '/node_modules/three/build/three.module.js';
 import { GLTFLoader } from '/node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 import Spaceship from '/scripts/spaceship.js';
+import Missile from '/scripts/Missile.js';
 import Asteroid from '/scripts/asteroid.js';
 import Skybox from '/scripts/skybox.js';
 
@@ -36,7 +37,7 @@ class Main {
     }
 
     initSceneLighting() {
-        this.ambientLight = new THREE.AmbientLight(0xffffff, 2);
+        this.ambientLight = new THREE.AmbientLight(0xffffff, 3);
         this.scene.add(this.ambientLight);
     }
 
@@ -54,11 +55,13 @@ class Main {
         }
         this.initSkybox();
         this.initSpaceship();
+        this.initMissile();
         this.initAsteroids();
         this.sceneManager = new THREE.Group();
         this.sceneManager.add(this.spaceship);
         this.sceneManager.add(this.skybox);
         this.sceneManager.add(this.asteroidGroup);
+        this.sceneManager.add(this.missileGroup);
         this.scene.add(this.sceneManager);
     }
 
@@ -72,6 +75,9 @@ class Main {
 
             this.spaceshipModel = await this.loadGLTFModel('/models/spaceship/scene.gltf');
             console.log('Spaceship model loaded successfully:', this.spaceshipModel);
+
+            this.missileModel = await this.loadGLTFModel('/models/missile/scene.gltf');
+            console.log('Missile model loaded successfully:', this.missileModel);
 
             this.asteroidModel = await this.loadGLTFModel('/models/asteroid/scene.gltf');
             console.log('Asteroid model loaded successfully:', this.asteroidModel);
@@ -117,7 +123,7 @@ class Main {
     initAsteroids() {
         this.asteroidGroup = new THREE.Group();
         this.asteroidAmount = 10;
-        
+
         for (let i = 0; i < this.asteroidAmount; i++) {
             this.asteroid = new Asteroid(this.asteroidModel);
             this.asteroid.setupAsteroid();
@@ -133,6 +139,25 @@ class Main {
         }
     }
 
+    initMissile() {
+        this.missileGroup = new THREE.Group();
+        this.missile = new Missile(this.missileModel);
+        this.missile.setupMissile();
+    }
+
+    fireMissile() {
+        this.newMissile = this.missile.clone();
+        this.missileGroup.add(this.newMissile);
+        const missileForwardOffset = new THREE.Vector3(0, 0, -4);
+        missileForwardOffset.applyQuaternion(this.spaceship.quaternion);
+        this.newMissile.position.copy(this.spaceship.position).add(missileForwardOffset);
+        this.newMissile.rotation.copy(this.spaceship.rotation);
+
+        this.newMissile.isMissileReady = true;
+        console.log('Fire!');
+        console.log(this.missileGroup.children.length);
+    }
+
     randomRange(min, max) {
         return Math.random() * (max - min) + min;
     }
@@ -141,11 +166,22 @@ class Main {
         requestAnimationFrame(this.update);
         if (this.spaceship) {
             this.spaceship.update();
+            if (this.spaceship.isShooting) {
+                this.spaceship.isShooting = false;
+                this.fireMissile();
+            }
         }
         if (this.skybox) {
             this.skybox.update();
             //this.skybox.position.copy(this.spaceship.position);
         }
+
+        if (this.missileGroup) {
+            this.missileGroup.children.forEach(missile => {
+                missile.update();
+            });
+        }
+
         if (this.asteroidGroup) {
             this.asteroidGroup.children.forEach(asteroid => {
                 asteroid.update();
@@ -156,5 +192,5 @@ class Main {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    new Main(); 
+    new Main();
 });

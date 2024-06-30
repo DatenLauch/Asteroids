@@ -23,6 +23,8 @@ This work is based on "Asteroids Pack (rocky version)" (https://sketchfab.com/3d
 
 Missiles
 
+This work is based on "Missile" (https://sketchfab.com/3d-models/missile-81a345f9835342c989bae51a2574bd86) by martyn169 (https://sketchfab.com/martyn169) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+
 
 Sound
 
