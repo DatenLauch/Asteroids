@@ -5,27 +5,29 @@ export default class Asteroid extends THREE.Object3D {
     constructor(model) {
         super();
         this.type = 'asteroid';
+        this.name = 'asteroid';
+        this.size = 9;
         this.model = this.deepClone(model);
-        this.asteroidSize = null;
-        this.baseSize = 2;
-        this.boundingBox = null;
+        this.boundingBox = new THREE.Box3()
         this.isAsteroidReady = false;
 
-        // Speed
-        this.minSpeed = 0;
-        this.maxSpeed = 0.1;
-        this.speed = Math.random() * (this.maxSpeed - this.minSpeed) + this.minSpeed;
+        this.speed = 1;
+        this.direction = new THREE.Vector3();
+        this.velocity = new THREE.Vector3();
 
-        // Velocity
-        this.direction = new THREE.Vector3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1).normalize();
-        this.velocity = this.direction.multiplyScalar(this.speed);
-
-        // Rotation
-        this.rotationAxis = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
-        this.rotationSpeed = Math.random() * 0.5;
+        this.rotationAxis = new THREE.Vector3();
+        this.rotationSpeed = 0.5 / this.size;
     }
 
-    // deep clone model and it's children so that multiple asteroid instances don't mess with the original model (reference by reference)
+    setupAsteroid() {
+        this.setRandomModel();
+        this.setRandomVelocity();
+        this.setRandomRotation();
+        this.add(this.model);
+        this.model.scale.set(this.size, this.size, this.size);
+        this.isAsteroidReady = true;
+    }
+
     deepClone(model) {
         const modelClone = model.clone();
         const cloneChildren = (parent, parentClone) => {
@@ -40,39 +42,64 @@ export default class Asteroid extends THREE.Object3D {
         return modelClone;
     }
 
-    setupAsteroid() {
-        this.axesHelper = new THREE.AxesHelper(10);
-        this.add(this.axesHelper);
-        this.randomizeAsteroidSize();
-        this.randomizeModel();
-        this.add(this.model);
-        this.model.position.set(0, 0, 0);
-        this.model.scale.set(this.baseSize * this.asteroidSize, this.baseSize * this.asteroidSize, this.baseSize * this.asteroidSize);
-        this.isAsteroidReady = true;
-    }
-
-    randomizeModel() {
+    setRandomModel() {
         // there are 10 different asteroid models at this.model.children[0].children[0].children[0]);
-        this.randomModelNumber = Math.floor(Math.random() * (this.model.children[0].children[0].children[0].children.length));
-        this.model = this.model.children[0].children[0].children[0].children[this.randomModelNumber];
+        const randomModel = Math.floor(Math.random() * this.model.children[0].children[0].children[0].children.length);
+        this.model = this.model.children[0].children[0].children[0].children[randomModel];
+        this.model.position.set(0, 0, 0);
     }
 
-    randomizeAsteroidSize() {
-        this.asteroidSize = Math.floor(Math.random() * 3) + 1;
+    setRandomRotation(){
+        this.rotationAxis = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
+    }
+
+    setRandomVelocity() {
+        this.speed = this.speed * 3 / this.size;
+        this.direction = new THREE.Vector3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1).normalize();
+        this.velocity = this.direction.multiplyScalar(this.speed);
+    }
+
+    takeDamage(damage) {
+        if (damage >= this.size) {
+            this.size = 0;
+        }
+        else {
+            this.size = this.size - damage;
+            this.model.scale.set(this.size, this.size, this.size);
+            this.setRandomVelocity();
+        }
+    }
+
+    updateBoundingBox() {
+        //const boxSize = new THREE.Vector3(10, 10, 10);
+        const boundingBoxPosition = this.position.clone();
+        this.getWorldPosition(boundingBoxPosition);
+        this.boundingBox.setFromObject(this);
+        //this.boundingBox.setFromCenterAndSize(this.position, boxSize);
+    }
+
+    checkCollision(collider) {
+        if (this.boundingBox.intersectsBox(collider.boundingBox)) {
+            return true;
+        }
+        return false;
     }
 
     move() {
-        //this.position.add(this.velocity);
+        this.position.add(this.velocity);
     }
 
     rotate() {
-        //this.rotateOnAxis(this.rotationAxis, this.rotationSpeed);
+        const rotation = new THREE.Quaternion();
+        rotation.setFromAxisAngle(this.rotationAxis, this.rotationSpeed);
+        this.quaternion.multiply(rotation);
     }
 
     update() {
         if (this.isAsteroidReady) {
             this.move();
             this.rotate();
+            this.updateBoundingBox();
         }
     }
 }

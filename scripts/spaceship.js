@@ -5,28 +5,28 @@ export default class Spaceship extends THREE.Object3D {
     constructor(model) {
         super();
         this.type = 'spaceship';
+        this.name = 'spaceship';
         this.model = model;
         this.isSpaceshipReady = false;
         this.isShooting = false;
+        this.boundingBox = new THREE.Box3();
 
-        // Controls
         this.keydownHandler = this.keydownHandler.bind(this);
         this.keyupHandler = this.keyupHandler.bind(this);
         this.mouseMoveHandler = this.mouseMoveHandler.bind(this);
         this.canvas = document.querySelector('canvas');
         this.areShipControlsEnabled = false;
 
-        // Speed
         this.currentSpeed = 0;
-        this.maxSpeed = 0.5;
+        this.maxSpeed = 1;
         this.minSpeed = -this.maxSpeed;
         this.velocity = new THREE.Vector3();
-        this.accelerationMagnitude = 0.005;
+        this.accelerationMagnitude = 0.010;
         this.isMovingForward = false;
         this.isMovingBackwards = false;
+        this.attackSpeed = 0.5;
 
-        // Rotation
-        this.rotationSpeed = 0.02;
+        this.rotationSpeed = 0.005;
         this.rollIncrement = 2;
         this.maxRollAngle = 30;
         this.pitchIncrement = 1;
@@ -53,6 +53,7 @@ export default class Spaceship extends THREE.Object3D {
         document.addEventListener('mousemove', this.mouseMoveHandler);
         this.canvas.requestPointerLock();
         this.areShipControlsEnabled = true;
+        this.canFire = true;
     }
 
     disableShipControls() {
@@ -195,9 +196,15 @@ export default class Spaceship extends THREE.Object3D {
                     break;
 
                 case ' ':
-                    if (!this.isSpacebarDown) {
-                        this.isSpacebarDown = true;
-                        this.isShooting = true;
+                    if (!this.isSpacebarDown) {  
+                        if(this.canFire){
+                            this.isSpacebarDown = true;
+                            this.isShooting = true;
+                            this.canFire = false;
+                            setTimeout(() => {
+                                this.canFire = true;
+                            }, (this.attackSpeed * 1000)); 
+                        }
                     }
                     break;
             }
@@ -247,10 +254,24 @@ export default class Spaceship extends THREE.Object3D {
         this.position.add(this.velocity);
     }
 
+    updateBoundingBox() {
+        const boxSize = new THREE.Vector3(10, 4, 10);
+        const boundingBoxPosition = this.position;
+        this.boundingBox.setFromCenterAndSize(boundingBoxPosition, boxSize);
+    }
+
+    checkCollision(collider) {
+        if (this.boundingBox.intersectsBox(collider.boundingBox)) {
+            return true;
+        }
+        return false;
+    }
+
     update() {
         if (this.isSpaceshipReady) {
             this.positionSpaceship();
             this.rotateSpaceship();
+            this.updateBoundingBox();
         }
     }
 }

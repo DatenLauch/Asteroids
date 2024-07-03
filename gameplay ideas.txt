@@ -34,3 +34,8 @@ Multimedia:
 
 ---------------------------------
 Considerations: Different control schemes more suited for 3D environment.
+game modes:
+
+Gigantic Asteroid = Fragments into smaller pieces, win once large asteroid complettely destroyed and pieces cleaned up.
+Asteroit Assault = Many spawn far from one side and fly towards the player, dodge X time to win.
+Standard = regular asteroids. Destroy 10 to win.
