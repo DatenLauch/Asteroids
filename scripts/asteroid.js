@@ -6,7 +6,7 @@ export default class Asteroid extends THREE.Object3D {
         super();
         this.type = 'asteroid';
         this.name = 'asteroid';
-        this.size = 9;
+        this.size = 9; // amount of asteroid splitting = asteroid.size / missile.damage
         this.model = this.deepClone(model);
         this.boundingBox = new THREE.Box3()
         this.isAsteroidReady = false;
@@ -16,13 +16,14 @@ export default class Asteroid extends THREE.Object3D {
         this.velocity = new THREE.Vector3();
 
         this.rotationAxis = new THREE.Vector3();
-        this.rotationSpeed = 0.5 / this.size;
+        this.maxRotationSpeed = 0.3;
+        this.currentRotationSpeed = this.maxRotationSpeed / (this.size * 2);
     }
 
     setupAsteroid() {
         this.setRandomModel();
         this.setRandomVelocity();
-        this.setRandomRotation();
+        this.setRandomRotationAxis();
         this.add(this.model);
         this.model.scale.set(this.size, this.size, this.size);
         this.isAsteroidReady = true;
@@ -49,7 +50,7 @@ export default class Asteroid extends THREE.Object3D {
         this.model.position.set(0, 0, 0);
     }
 
-    setRandomRotation(){
+    setRandomRotationAxis(){
         this.rotationAxis = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
     }
 
@@ -65,6 +66,7 @@ export default class Asteroid extends THREE.Object3D {
         }
         else {
             this.size = this.size - damage;
+            this.currentRotationSpeed = this.maxRotationSpeed / this.size;
             this.model.scale.set(this.size, this.size, this.size);
             this.setRandomVelocity();
         }
@@ -91,7 +93,7 @@ export default class Asteroid extends THREE.Object3D {
 
     rotate() {
         const rotation = new THREE.Quaternion();
-        rotation.setFromAxisAngle(this.rotationAxis, this.rotationSpeed);
+        rotation.setFromAxisAngle(this.rotationAxis, this.currentRotationSpeed);
         this.quaternion.multiply(rotation);
     }
 

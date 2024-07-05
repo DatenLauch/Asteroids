@@ -65,16 +65,12 @@ class Main {
         try {
             this.skyboxModel = await this.loadGLTFModel('/models/skybox/scene.gltf');
             console.log('Skybox model loaded successfully:', this.skyboxModel);
-
             this.spaceshipModel = await this.loadGLTFModel('/models/spaceship/scene.gltf');
             console.log('Spaceship model loaded successfully:', this.spaceshipModel);
-
             this.missileModel = await this.loadGLTFModel('/models/missile/scene.gltf');
             console.log('Missile model loaded successfully:', this.missileModel);
-
             this.asteroidModel = await this.loadGLTFModel('/models/asteroid/scene.gltf');
             console.log('Asteroid model loaded successfully:', this.asteroidModel);
-
         } catch (error) {
             console.error('Error loading models:', error);
         }
@@ -120,18 +116,18 @@ class Main {
         this.asteroidAmount = 10;
         for (let i = 0; i < this.asteroidAmount; i++) {
             let isWithinSkybox = false;
-            let awayFromSpawn = false;
-            let spawnRadius = this.skybox.radius - 50;
-            let safeZoneRadius = 100;
+            let awayFromCenter = false;
+            const maxSpawnRadius = this.skybox.radius - 50;
+            const safeZoneRadius = 200;
             let x, y, z;
-            while (!isWithinSkybox && !awayFromSpawn) {
+            while (!isWithinSkybox || !awayFromCenter) {
                 x = this.randomRange(-this.skybox.radius, this.skybox.radius);
                 y = this.randomRange(-this.skybox.radius, this.skybox.radius);
                 z = this.randomRange(-this.skybox.radius, this.skybox.radius);
                 if (x * x + y * y + z * z > safeZoneRadius * safeZoneRadius) {
-                    awayFromSpawn = true;
+                    awayFromCenter = true;
                 }
-                if (x * x + y * y + z * z > spawnRadius * spawnRadius) {
+                if (x * x + y * y + z * z < maxSpawnRadius * maxSpawnRadius) {
                     isWithinSkybox = true;
                 }
             }
@@ -168,6 +164,7 @@ class Main {
 
         if (this.spaceship) {
             this.spaceship.update();
+            
             if (this.spaceship.isShooting) {
                 this.spaceship.isShooting = false;
                 this.fireMissile();
@@ -181,31 +178,44 @@ class Main {
             this.missileGroup.children.forEach(missile => {
                 missile.update();
                 this.deleteEscapingMissile(missile);
+
+                this.asteroidGroup.children.forEach(asteroid => {
+                    if (missile.checkCollision(asteroid)) {
+                        this.missileGroup.remove(missile);
+                        asteroid.takeDamage(missile.dealDamage());
+                        
+                        if (asteroid.size == 0)
+                            this.asteroidGroup.remove(asteroid);
+                        else
+                            this.spawnAsteroidFragment(asteroid);
+                    }
+                });
             });
         }
 
         if (this.asteroidGroup) {
-            this.asteroidGroup.children.forEach(asteroid => {
-                asteroid.update();
-                this.keepAsteroidInPlayfield(asteroid);
 
-                if (asteroid.checkCollision(this.spaceship)) {
+            for (let i = 0; i < this.asteroidGroup.children.length; i++) {
+                const asteroid1 = this.asteroidGroup.children[i];
+                asteroid1.update();
+
+                if (asteroid1.checkCollision(this.spaceship)) 
                     this.destroyShip();
-                }
 
-                this.missileGroup.children.forEach(missile => {
-                    if (missile.checkCollision(asteroid)) {
-                        this.missileGroup.remove(missile);
-                        asteroid.takeDamage(missile.dealDamage());
-                        if (asteroid.size == 0) {
-                            this.asteroidGroup.remove(asteroid);
-                        }
-                        else {
-                            this.spawnAsteroidFragment(asteroid);
-                        }
+                for (let j = i + 1; j < this.asteroidGroup.children.length; j++) {
+                    const asteroid2 = this.asteroidGroup.children[j];
+
+                    if (asteroid1.checkCollision(asteroid2)) {
+                        const direction = new THREE.Vector3().subVectors(asteroid1.position, asteroid2.position).normalize();
+                        let velocity1 = new THREE.Vector3().copy(direction).multiplyScalar(asteroid1.speed);
+                        let velocity2 = new THREE.Vector3().copy(direction).multiplyScalar(-asteroid2.speed);
+                        asteroid1.velocity.copy(velocity1);
+                        asteroid2.velocity.copy(velocity2);
                     }
-                });
-            });
+                    this.keepAsteroidInPlayfield(asteroid1);
+                    this.keepAsteroidInPlayfield(asteroid2);
+                }
+            }
         }
         this.renderer.render(this.scene, this.camera);
     }
@@ -222,7 +232,7 @@ class Main {
             const direction = new THREE.Vector3();
             direction.subVectors(this.spaceship.position, asteroid.position).normalize();
             asteroid.velocity.set(direction.x, direction.y, direction.z);
-            asteroid.velocity.multiplyScalar(this.spaceship.velocity.length() * 1.01);
+            asteroid.velocity.multiplyScalar(this.spaceship.velocity.length() * 1.10);
         }
     }
 
@@ -243,10 +253,6 @@ class Main {
         this.newAsteroid.size = asteroid.size;
         this.newAsteroid.setupAsteroid();
         this.asteroidGroup.add(this.newAsteroid);
-    }
-
-    hitAsteroid(){
-        
     }
 }
 
