@@ -28,8 +28,11 @@ This work is based on "Missile" (https://sketchfab.com/3d-models/missile-81a345f
 
 Sound
 
+All sound effects are from Rubert Spore's classic arcalde sound effects: https://yourpalrob.itch.io/classic-arcade-sound-effects
 
 Music
+
+"A ray of Hope" by doranarasi from the Shmup BGM Pack Vol 1: https://doranarasi.itch.io/shmup-bgm-pack-1
 
 
 VFX

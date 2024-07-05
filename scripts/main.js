@@ -7,13 +7,12 @@ import Skybox from '/scripts/skybox.js';
 
 class Main {
     constructor() {
-        this.GLTFLoader = new GLTFLoader();
         this.setupRenderer();
         this.setupScene();
+        this.setupAudio();
         this.setupGame();
         this.update();
     }
-
     setupRenderer() {
         this.canvas = document.getElementById('canvas');
         this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas });
@@ -44,6 +43,54 @@ class Main {
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     }
 
+    setupAudio() {
+        this.audioLoader = new THREE.AudioLoader();
+        this.audioListener = new THREE.AudioListener();
+
+        this.shootSound = new THREE.Audio(this.audioListener);
+        this.audioLoader.load('audio/shoot.wav', (buffer) => {
+            this.shootSound.setBuffer(buffer);
+        });
+
+        this.asteroidhitSound = new THREE.Audio(this.audioListener);
+        this.audioLoader.load('audio/asteroidhit.wav', (buffer) => {
+            this.asteroidhitSound.setBuffer(buffer);
+        });
+
+        this.asteroiddestroyedSound = new THREE.Audio(this.audioListener);
+        this.audioLoader.load('audio/asteroiddestroyed.wav', (buffer) => {
+            this.asteroiddestroyedSound.setBuffer(buffer);
+        });
+
+        this.spaceshipdestroyedSound = new THREE.Audio(this.audioListener);
+        this.audioLoader.load('audio/spaceshipdestroyed.wav', (buffer) => {
+            this.spaceshipdestroyedSound.setBuffer(buffer);
+        });
+
+        this.introMusic = new THREE.Audio(this.audioListener);
+        this.audioLoader.load('audio/musicintro.ogg', (buffer) => {
+            this.introMusic.setBuffer(buffer);
+            this.introMusic.onEnded = () => {
+                this.playSound(this.loopMusic);
+            };
+        });
+    
+        this.loopMusic = new THREE.Audio(this.audioListener);
+        this.audioLoader.load('audio/musicloop.ogg', (buffer) => {
+            this.loopMusic.setBuffer(buffer);
+            this.loopMusic.setLoop(true);
+        });
+
+
+    }
+
+    playSound(sound) {
+        if (sound.isPlaying) {
+            sound.stop();
+        }
+        sound.play();
+    }
+
     async setupGame() {
         this.initGamemode();
         try {
@@ -56,6 +103,7 @@ class Main {
         this.initSpaceship();
         this.initMissileGroup();
         this.initAsteroidGroup();
+        this.playSound(this.introMusic);
     }
 
     initGamemode() {
@@ -77,6 +125,7 @@ class Main {
     }
 
     async loadGLTFModel(path) {
+        this.GLTFLoader = new GLTFLoader();
         return new Promise((resolve, reject) => {
             this.GLTFLoader.load(path,
                 (gltf) => {
@@ -104,8 +153,9 @@ class Main {
     initSpaceship() {
         this.spaceship = new Spaceship(this.spaceshipModel);
         this.spaceship.setupSpaceship();
-        this.scene.add(this.spaceship);
         this.spaceship.add(this.camera);
+        this.spaceship.add(this.audioListener);
+        this.scene.add(this.spaceship);
         this.camera.position.y = 5;
         this.camera.position.z = 15;
     }
@@ -164,10 +214,11 @@ class Main {
 
         if (this.spaceship) {
             this.spaceship.update();
-            
+
             if (this.spaceship.isShooting) {
                 this.spaceship.isShooting = false;
                 this.fireMissile();
+                this.playSound(this.shootSound);
             }
         }
         if (this.skybox) {
@@ -183,11 +234,15 @@ class Main {
                     if (missile.checkCollision(asteroid)) {
                         this.missileGroup.remove(missile);
                         asteroid.takeDamage(missile.dealDamage());
-                        
-                        if (asteroid.size == 0)
-                            this.asteroidGroup.remove(asteroid);
-                        else
+
+                        if (asteroid.size > 0) {
+                            this.playSound(this.asteroidhitSound);
                             this.spawnAsteroidFragment(asteroid);
+                        }
+                        else {
+                            this.playSound(this.asteroiddestroyedSound);
+                            this.asteroidGroup.remove(asteroid);
+                        }
                     }
                 });
             });
@@ -199,8 +254,11 @@ class Main {
                 const asteroid1 = this.asteroidGroup.children[i];
                 asteroid1.update();
 
-                if (asteroid1.checkCollision(this.spaceship)) 
-                    this.destroyShip();
+                if (asteroid1.checkCollision(this.spaceship))
+                    if (this.spaceship.isSpaceshipReady) {
+                        this.destroyShip();
+                    }
+
 
                 for (let j = i + 1; j < this.asteroidGroup.children.length; j++) {
                     const asteroid2 = this.asteroidGroup.children[j];
@@ -221,6 +279,7 @@ class Main {
     }
 
     destroyShip() {
+        this.playSound(this.spaceshipdestroyedSound);
         this.spaceship.disableShipControls();
         this.spaceship.isSpaceshipReady = false;
         this.scene.remove(this.spaceship);
