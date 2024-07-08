@@ -6,7 +6,8 @@ export default class Asteroid extends THREE.Object3D {
         super();
         this.type = 'asteroid';
         this.name = 'asteroid';
-        this.size = 9; // amount of asteroid splitting = asteroid.size / missile.damage
+        this.initialSize = 9;
+        this.size = this.initialSize; // amount of asteroid splitting equals asteroid.size / missile.damage. Keep divisable by 3.
         this.model = this.deepClone(model);
         this.boundingBox = new THREE.Box3()
         this.isAsteroidReady = false;
@@ -18,6 +19,9 @@ export default class Asteroid extends THREE.Object3D {
         this.rotationAxis = new THREE.Vector3();
         this.maxRotationSpeed = 0.3;
         this.currentRotationSpeed = this.maxRotationSpeed / (this.size * 2);
+
+        this.pointBaseValue = 100;
+        this.points = this.pointBaseValue * (this.initialSize - this.size); // points based on initial size: Large = 33%, Medium = 66%, Small = 100%
     }
 
     setupAsteroid() {
@@ -50,7 +54,7 @@ export default class Asteroid extends THREE.Object3D {
         this.model.position.set(0, 0, 0);
     }
 
-    setRandomRotationAxis(){
+    setRandomRotationAxis() {
         this.rotationAxis = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
     }
 
@@ -58,18 +62,6 @@ export default class Asteroid extends THREE.Object3D {
         this.speed = this.speed * 3 / this.size;
         this.direction = new THREE.Vector3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1).normalize();
         this.velocity = this.direction.multiplyScalar(this.speed);
-    }
-
-    takeDamage(damage) {
-        if (damage >= this.size) {
-            this.size = 0;
-        }
-        else {
-            this.size = this.size - damage;
-            this.currentRotationSpeed = this.maxRotationSpeed / this.size;
-            this.model.scale.set(this.size, this.size, this.size);
-            this.setRandomVelocity();
-        }
     }
 
     updateBoundingBox() {
@@ -80,11 +72,29 @@ export default class Asteroid extends THREE.Object3D {
         //this.boundingBox.setFromCenterAndSize(this.position, boxSize);
     }
 
+    getPoints() {
+        return this.points = this.pointBaseValue * (this.initialSize - this.size);
+    }
+
     checkCollision(collider) {
         if (this.boundingBox.intersectsBox(collider.boundingBox)) {
             return true;
         }
         return false;
+    }
+
+    takeDamage(damage) {
+        if (damage >= this.size) {
+            this.size = 0;
+            this.points = this.pointBaseValue * this.initialSize;
+        }
+        else {
+            this.size = this.size - damage;
+            this.currentRotationSpeed = this.maxRotationSpeed / this.size;
+            this.model.scale.set(this.size, this.size, this.size);
+            this.points = this.pointBaseValue * (this.initialSize - this.size);
+            this.setRandomVelocity();
+        }
     }
 
     move() {

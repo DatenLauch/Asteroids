@@ -11,7 +11,6 @@ class Main {
         this.setupScene();
         this.setupAudio();
         this.setupGame();
-        this.update();
     }
     setupRenderer() {
         this.canvas = document.getElementById('canvas');
@@ -74,14 +73,12 @@ class Main {
                 this.playSound(this.loopMusic);
             };
         });
-    
+
         this.loopMusic = new THREE.Audio(this.audioListener);
         this.audioLoader.load('audio/musicloop.ogg', (buffer) => {
             this.loopMusic.setBuffer(buffer);
             this.loopMusic.setLoop(true);
         });
-
-
     }
 
     playSound(sound) {
@@ -92,21 +89,93 @@ class Main {
     }
 
     async setupGame() {
-        this.initGamemode();
         try {
             await this.loadModels();
         }
         catch (error) {
             console.error('Error while loading Models: ', error);
         }
-        this.initSkybox();
-        this.initSpaceship();
-        this.initMissileGroup();
-        this.initAsteroidGroup();
-        this.playSound(this.introMusic);
+        this.startMenu();
     }
 
-    initGamemode() {
+    initGameSettings() {
+        this.timerMinutes = 5;
+        this.timerSeconds = 0;
+        this.asteroidAmount = 10;
+        this.score = 0;
+    }
+
+    startMenu() {
+        this.mainMenu = document.getElementById('main-menu-screen');
+        this.mainMenu.addEventListener('click', () => {
+            if (!this.introMusic.isPlaying) {
+                this.playSound(this.introMusic);
+            }
+        });
+        this.mainMenu.style.display = 'flex';
+        this.initGameSettings();
+        this.initSkybox();
+        this.initAsteroidGroup();
+        this.initSpaceship();
+        this.initMissileGroup();
+        this.hasGameStarted = false;
+        this.update();
+        this.startButton = document.getElementById('start-button');
+        this.startButton.addEventListener('click', () => {
+            this.mainMenu.style.display = 'none';
+            this.startGame();
+        });
+    }
+
+    startGame() {
+        this.hasGameStarted = true;
+        this.scene.add(this.spaceship);
+        this.initHud();
+        this.startTimer();
+    }
+
+    initHud() {
+        this.asteroidTextValue = document.getElementById('asteroid-counter-text-value');
+        this.updateAsteroidCount(this.asteroidAmount);
+
+        this.timeTextValue = document.getElementById('time-text-value');
+
+        this.scoreTextValue = document.getElementById('score-text-value');
+        this.updateScore(this.score);
+
+        this.hud = document.getElementById('hud');
+        this.hud.style.display = 'flex';
+    }
+
+    updateAsteroidCount(amount) {
+        this.asteroidTextValue.textContent = amount;
+    }
+
+    startTimer() {
+        this.endTime = Date.now() + this.timerMinutes * 60 * 1000 + this.timerSeconds * 1000;
+        const timeInterval = setInterval(() => {
+            this.remainingTime = this.endTime - Date.now();
+            if (this.remainingTime > 0) {
+                const minutes = Math.floor(this.remainingTime / 60000);
+                const seconds = Math.floor((this.remainingTime % 60000) / 1000);
+                const formattedMinutes = minutes.toString().padStart(2, '0');
+                const formattedSeconds = seconds.toString().padStart(2, '0');
+                this.formattedTime = `${formattedMinutes}:${formattedSeconds}`;
+            } else {
+                clearInterval(timeInterval);
+                this.formattedTime = '00:00';
+                if (this.spaceship.isSpaceshipReady) {
+                    this.destroySpaceship();
+                }
+            }
+            this.timeTextValue.textContent = this.formattedTime;
+        }, 1000);
+    }
+
+    updateScore(amount) {
+        this.score += amount;
+        this.scoreTextValue.textContent = this.score;
+
     }
 
     async loadModels() {
@@ -153,17 +222,16 @@ class Main {
     initSpaceship() {
         this.spaceship = new Spaceship(this.spaceshipModel);
         this.spaceship.setupSpaceship();
-        this.spaceship.add(this.camera);
-        this.spaceship.add(this.audioListener);
-        this.scene.add(this.spaceship);
         this.camera.position.y = 5;
         this.camera.position.z = 15;
+        this.spaceship.add(this.camera);
+        this.spaceship.add(this.audioListener);
+        //this.scene.add(this.spaceship);
     }
 
     initAsteroidGroup() {
         this.asteroidGroup = new THREE.Group();
         this.scene.add(this.asteroidGroup);
-        this.asteroidAmount = 10;
         for (let i = 0; i < this.asteroidAmount; i++) {
             let isWithinSkybox = false;
             let awayFromCenter = false;
@@ -211,14 +279,14 @@ class Main {
 
     update() {
         requestAnimationFrame(() => this.update());
-
         if (this.spaceship) {
             this.spaceship.update();
-
-            if (this.spaceship.isShooting) {
-                this.spaceship.isShooting = false;
-                this.fireMissile();
-                this.playSound(this.shootSound);
+            if (this.hasGameStarted) {
+                if (this.spaceship.isShooting) {
+                    this.spaceship.isShooting = false;
+                    this.fireMissile();
+                    this.playSound(this.shootSound);
+                }
             }
         }
         if (this.skybox) {
@@ -229,19 +297,20 @@ class Main {
             this.missileGroup.children.forEach(missile => {
                 missile.update();
                 this.deleteEscapingMissile(missile);
-
                 this.asteroidGroup.children.forEach(asteroid => {
                     if (missile.checkCollision(asteroid)) {
                         this.missileGroup.remove(missile);
                         asteroid.takeDamage(missile.dealDamage());
-
+                        this.updateScore(asteroid.getPoints());
                         if (asteroid.size > 0) {
                             this.playSound(this.asteroidhitSound);
                             this.spawnAsteroidFragment(asteroid);
+                            this.updateAsteroidCount(this.asteroidGroup.children.length);
                         }
                         else {
                             this.playSound(this.asteroiddestroyedSound);
                             this.asteroidGroup.remove(asteroid);
+                            this.updateAsteroidCount(this.asteroidGroup.children.length);
                         }
                     }
                 });
@@ -249,20 +318,15 @@ class Main {
         }
 
         if (this.asteroidGroup) {
-
             for (let i = 0; i < this.asteroidGroup.children.length; i++) {
                 const asteroid1 = this.asteroidGroup.children[i];
                 asteroid1.update();
-
                 if (asteroid1.checkCollision(this.spaceship))
                     if (this.spaceship.isSpaceshipReady) {
-                        this.destroyShip();
+                        this.destroySpaceship();
                     }
-
-
                 for (let j = i + 1; j < this.asteroidGroup.children.length; j++) {
                     const asteroid2 = this.asteroidGroup.children[j];
-
                     if (asteroid1.checkCollision(asteroid2)) {
                         const direction = new THREE.Vector3().subVectors(asteroid1.position, asteroid2.position).normalize();
                         let velocity1 = new THREE.Vector3().copy(direction).multiplyScalar(asteroid1.speed);
@@ -278,11 +342,14 @@ class Main {
         this.renderer.render(this.scene, this.camera);
     }
 
-    destroyShip() {
+    destroySpaceship() {
         this.playSound(this.spaceshipdestroyedSound);
         this.spaceship.disableShipControls();
         this.spaceship.isSpaceshipReady = false;
-        this.scene.remove(this.spaceship);
+        this.scene.remove(this.spaceship)
+        this.hud.style.display = 'none';
+        this.gameOverScreen = document.getElementById('game-over-screen');
+        this.gameOverScreen.style.display = 'flex';
     }
 
     keepAsteroidInPlayfield(asteroid) {
