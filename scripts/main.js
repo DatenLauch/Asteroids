@@ -14,7 +14,7 @@ class Main {
     }
 
     initGameSettings() {
-        this.asteroidAmount = 100;
+        this.asteroidAmount = 10;
         this.timerMinutes = 5;
         this.timerSeconds = 0;
         this.score = 0;
@@ -42,7 +42,8 @@ class Main {
     }
 
     initSceneLighting() {
-        this.ambientLight = new THREE.AmbientLight(0xffffff, 3);
+        this.ambientLight = new THREE.AmbientLight(0xffffff, 1);
+        this.ambientLight.castShadow = true;
         this.scene.add(this.ambientLight);
     }
 
@@ -151,7 +152,13 @@ class Main {
         return new Promise((resolve, reject) => {
             this.GLTFLoader.load(path,
                 (gltf) => {
-                    const model = gltf.scene || gltf.scenes[0];
+                    gltf.scene.traverse((node) => {
+                        if (node.isMesh) {
+                            node.castShadow = true;
+                            node.receiveShadow = true;
+                        }
+                    });
+                    const model = gltf.scene;
                     resolve(model);
                 },
                 (xhr) => {
@@ -199,14 +206,6 @@ class Main {
         this.scene.add(this.spaceship);
         this.initHud();
         this.startTimer(this.timerMinutes, this.timerSeconds);
-    }
-
-    removeAsteroids() {
-        while (this.asteroidGroup.children.length > 0) {
-            const asteroid = this.asteroidGroup.children[0];
-            this.asteroidGroup.remove(asteroid);
-        }
-        this.scene.remove(this.asteroidGroup);
     }
 
     enableScoreScreen() {
@@ -308,6 +307,14 @@ class Main {
             this.asteroid.position.set(x, y, z);
             this.asteroidGroup.add(this.asteroid);
         }
+    }
+
+    removeAsteroids() {
+        while (this.asteroidGroup.children.length > 0) {
+            const asteroid = this.asteroidGroup.children[0];
+            this.asteroidGroup.remove(asteroid);
+        }
+        this.scene.remove(this.asteroidGroup);
     }
 
     initMissileGroup() {

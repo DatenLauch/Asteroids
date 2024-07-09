@@ -43,7 +43,32 @@ export default class Spaceship extends THREE.Object3D {
         this.model.position.set(0, 0, 0);
         this.model.scale.set(0.5, 0.5, 0.5);
         this.model.rotation.y = THREE.MathUtils.degToRad(this.yAngleModelOffset);
+        this.enableAimAssist();
         this.isSpaceshipReady = true;
+    }
+
+    enableAimAssist(){
+        const target = new THREE.Object3D();
+        target.position.set(0, -1, -2);
+        this.add(target);
+
+        const headlight = new THREE.SpotLight(0xffffff, 5);
+        headlight.distance = 500;
+        headlight.position.set(0, -1, -1);
+        headlight.target = (target);
+        headlight.angle = Math.PI / 5
+        headlight.decay = 0;
+        headlight.castShadow = true;
+        this.add(headlight);
+
+        const aimlight = new THREE.SpotLight(0xff0000, 10000);
+        aimlight.distance = 490;
+        aimlight.position.set(0, -1, -1);
+        aimlight.target = (target);
+        aimlight.angle = Math.PI / 300
+        aimlight.decay = 0;
+        aimlight.castShadow = true;
+        this.add(aimlight);
     }
 
     enableShipControls() {
@@ -195,14 +220,14 @@ export default class Spaceship extends THREE.Object3D {
                     break;
 
                 case ' ':
-                    if (!this.isSpacebarDown) {  
-                        if(this.canFire){
+                    if (!this.isSpacebarDown) {
+                        if (this.canFire) {
                             this.isSpacebarDown = true;
                             this.isShooting = true;
                             this.canFire = false;
                             setTimeout(() => {
                                 this.canFire = true;
-                            }, (this.attackSpeed * 1000)); 
+                            }, (this.attackSpeed * 1000));
                         }
                     }
                     break;
