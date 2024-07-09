@@ -12,6 +12,14 @@ class Main {
         this.setupAudio();
         this.setupGame();
     }
+
+    initGameSettings() {
+        this.asteroidAmount = 100;
+        this.timerMinutes = 5;
+        this.timerSeconds = 0;
+        this.score = 0;
+    }
+
     setupRenderer() {
         this.canvas = document.getElementById('canvas');
         this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas });
@@ -107,7 +115,7 @@ class Main {
         sound.play();
     }
 
-    stopSound(sound){
+    stopSound(sound) {
         if (sound.isPlaying) {
             sound.stop();
         }
@@ -158,13 +166,6 @@ class Main {
         });
     }
 
-    initGameSettings() {
-        this.asteroidAmount = 10;
-        this.timerMinutes = 5;
-        this.timerSeconds = 0;
-        this.score = 0;
-    }
-
     enableStartMenu() {
         this.mainMenu = document.getElementById('main-menu-screen');
         this.mainMenu.addEventListener('click', () => {
@@ -205,9 +206,10 @@ class Main {
             const asteroid = this.asteroidGroup.children[0];
             this.asteroidGroup.remove(asteroid);
         }
+        this.scene.remove(this.asteroidGroup);
     }
 
-    enableScoreScreen(){
+    enableScoreScreen() {
         this.stopSound(this.stageMusic);
         this.stopSound(this.stageMusicLoop);
         this.playSound(this.endMusic);
@@ -259,8 +261,8 @@ class Main {
             this.timeTextValue.textContent = this.formattedTime;
         }, 1000);
     }
-    
-    stopTimer(){
+
+    stopTimer() {
         clearInterval(this.timerInterval);
     }
 
@@ -278,8 +280,8 @@ class Main {
     initSpaceship() {
         this.spaceship = new Spaceship(this.spaceshipModel);
         this.spaceship.setupSpaceship();
-        this.spaceship.position.set(0,0,0);
-        this.spaceship.rotation.set(0,0,0);
+        this.spaceship.position.set(0, 0, 0);
+        this.spaceship.rotation.set(0, 0, 0);
         this.camera.position.y = 5;
         this.camera.position.z = 15;
         this.spaceship.add(this.camera);
@@ -290,23 +292,17 @@ class Main {
     initAsteroidGroup() {
         this.asteroidGroup = new THREE.Group();
         this.scene.add(this.asteroidGroup);
+        const maxSpawnDistance = this.skybox.radius;
+        const minSpawnDistance = this.skybox.radius * 0.2;
         for (let i = 0; i < this.asteroidAmount; i++) {
-            let isWithinSkybox = false;
-            let awayFromCenter = false;
-            const maxSpawnRadius = this.skybox.radius - 50;
-            const safeZoneRadius = 200;
             let x, y, z;
-            while (!isWithinSkybox || !awayFromCenter) {
-                x = this.randomRange(-this.skybox.radius, this.skybox.radius);
-                y = this.randomRange(-this.skybox.radius, this.skybox.radius);
-                z = this.randomRange(-this.skybox.radius, this.skybox.radius);
-                if (x * x + y * y + z * z > safeZoneRadius * safeZoneRadius) {
-                    awayFromCenter = true;
-                }
-                if (x * x + y * y + z * z < maxSpawnRadius * maxSpawnRadius) {
-                    isWithinSkybox = true;
-                }
-            }
+            let distance;
+            do {
+                x = this.randomRange(-maxSpawnDistance, maxSpawnDistance);
+                y = this.randomRange(-maxSpawnDistance, maxSpawnDistance);
+                z = this.randomRange(-maxSpawnDistance, maxSpawnDistance);
+                distance = Math.sqrt(x * x + y * y + z * z);
+            } while (distance < minSpawnDistance || distance > maxSpawnDistance);
             this.asteroid = new Asteroid(this.asteroidModel);
             this.asteroid.setupAsteroid();
             this.asteroid.position.set(x, y, z);
@@ -332,75 +328,77 @@ class Main {
     }
 
     randomRange(min, max) {
-        return Math.random() * (max - min) + min;
+        const randomNumber = Math.random() * (max - min) + min;
+        const roundedNumber = Math.round(randomNumber);
+        return roundedNumber;
     }
 
     update() {
         requestAnimationFrame(() => this.update());
-            if (this.spaceship) {
-                this.spaceship.update();
-                if (this.spaceship.isSpaceshipReady) {
-                    if (this.spaceship.isShooting) {
-                        this.spaceship.isShooting = false;
-                        this.fireMissile();
-                        this.playSound(this.shootSound);
-                    }
-                    if(this.asteroidGroup.children.length === 0){
-                        this.winGame();
-                    }
+        if (this.spaceship) {
+            this.spaceship.update();
+            if (this.spaceship.isSpaceshipReady) {
+                if (this.spaceship.isShooting) {
+                    this.spaceship.isShooting = false;
+                    this.fireMissile();
+                    this.playSound(this.shootSound);
+                }
+                if (this.asteroidGroup.children.length === 0) {
+                    this.winGame();
                 }
             }
-            if (this.skybox) {
-                this.skybox.position.copy(this.spaceship.position);
-            }
+        }
+        if (this.skybox) {
+            this.skybox.position.copy(this.spaceship.position);
+        }
 
-            if (this.missileGroup) {
-                this.missileGroup.children.forEach(missile => {
-                    missile.update();
-                    this.deleteEscapingMissile(missile);
-                    this.asteroidGroup.children.forEach(asteroid => {
-                        if (missile.checkCollision(asteroid)) {
-                            this.missileGroup.remove(missile);
-                            asteroid.takeDamage(missile.dealDamage());
-                            this.updateScore(asteroid.getPoints());
-                            if (asteroid.size > 0) {
-                                this.playSound(this.asteroidhitSound);
-                                this.spawnAsteroidFragment(asteroid);
-                                this.updateAsteroidCount(this.asteroidGroup.children.length);
-                            }
-                            else {
-                                this.playSound(this.asteroiddestroyedSound);
-                                this.asteroidGroup.remove(asteroid);
-                                this.updateAsteroidCount(this.asteroidGroup.children.length);
-                            }
+        if (this.missileGroup) {
+            this.missileGroup.children.forEach(missile => {
+                missile.update();
+                this.deleteEscapingMissile(missile);
+                this.asteroidGroup.children.forEach(asteroid => {
+                    if (missile.checkCollision(asteroid)) {
+                        this.missileGroup.remove(missile);
+                        asteroid.takeDamage(missile.dealDamage());
+                        this.updateScore(asteroid.getPoints());
+                        if (asteroid.size > 0) {
+                            this.playSound(this.asteroidhitSound);
+                            this.spawnAsteroidFragment(asteroid);
+                            this.updateAsteroidCount(this.asteroidGroup.children.length);
                         }
-                    });
+                        else {
+                            this.playSound(this.asteroiddestroyedSound);
+                            this.asteroidGroup.remove(asteroid);
+                            this.updateAsteroidCount(this.asteroidGroup.children.length);
+                        }
+                    }
                 });
-            }
+            });
+        }
 
-            if (this.asteroidGroup) {
-                for (let i = 0; i < this.asteroidGroup.children.length; i++) {
-                    const asteroid1 = this.asteroidGroup.children[i];
-                    asteroid1.update();
-                    if (asteroid1.checkCollision(this.spaceship))
-                        if (this.spaceship.isSpaceshipReady) {
-                            this.destroySpaceship();
-                        }
-                    for (let j = i + 1; j < this.asteroidGroup.children.length; j++) {
-                        const asteroid2 = this.asteroidGroup.children[j];
-                        if (asteroid1.checkCollision(asteroid2)) {
-                            const direction = new THREE.Vector3().subVectors(asteroid1.position, asteroid2.position).normalize();
-                            let velocity1 = new THREE.Vector3().copy(direction).multiplyScalar(asteroid1.speed);
-                            let velocity2 = new THREE.Vector3().copy(direction).multiplyScalar(-asteroid2.speed);
-                            asteroid1.velocity.copy(velocity1);
-                            asteroid2.velocity.copy(velocity2);
-                        }
-                        this.keepAsteroidInPlayfield(asteroid1);
-                        this.keepAsteroidInPlayfield(asteroid2);
+        if (this.asteroidGroup) {
+            for (let i = 0; i < this.asteroidGroup.children.length; i++) {
+                const asteroid1 = this.asteroidGroup.children[i];
+                asteroid1.update();
+                if (asteroid1.checkCollision(this.spaceship))
+                    if (this.spaceship.isSpaceshipReady) {
+                        this.destroySpaceship();
                     }
+                for (let j = i + 1; j < this.asteroidGroup.children.length; j++) {
+                    const asteroid2 = this.asteroidGroup.children[j];
+                    if (asteroid1.checkCollision(asteroid2)) {
+                        const direction = new THREE.Vector3().subVectors(asteroid1.position, asteroid2.position).normalize();
+                        let velocity1 = new THREE.Vector3().copy(direction).multiplyScalar(asteroid1.speed);
+                        let velocity2 = new THREE.Vector3().copy(direction).multiplyScalar(-asteroid2.speed);
+                        asteroid1.velocity.copy(velocity1);
+                        asteroid2.velocity.copy(velocity2);
+                    }
+                    this.keepAsteroidInPlayfield(asteroid1);
+                    this.keepAsteroidInPlayfield(asteroid2);
                 }
             }
-        
+        }
+
         this.renderer.render(this.scene, this.camera);
     }
 
@@ -414,7 +412,7 @@ class Main {
         this.enableScoreScreen();
     }
 
-    winGame(){
+    winGame() {
         this.stopTimer();
         this.spaceship.disableShipControls();
         this.spaceship.isSpaceshipReady = false;
@@ -427,7 +425,7 @@ class Main {
             const direction = new THREE.Vector3();
             direction.subVectors(this.skybox.position, asteroid.position).normalize();
             asteroid.velocity.set(direction.x, direction.y, direction.z);
-            if(this.spaceship.isSpaceshipReady){
+            if (this.spaceship.isSpaceshipReady) {
                 asteroid.velocity.multiplyScalar(this.spaceship.velocity.length() * 1.10);
             }
         }
