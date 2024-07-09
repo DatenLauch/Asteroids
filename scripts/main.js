@@ -46,6 +46,11 @@ class Main {
         this.audioLoader = new THREE.AudioLoader();
         this.audioListener = new THREE.AudioListener();
 
+        this.clickSound = new THREE.Audio(this.audioListener);
+        this.audioLoader.load('audio/click.wav', (buffer) => {
+            this.clickSound.setBuffer(buffer);
+        });
+
         this.shootSound = new THREE.Audio(this.audioListener);
         this.audioLoader.load('audio/shoot.wav', (buffer) => {
             this.shootSound.setBuffer(buffer);
@@ -66,18 +71,32 @@ class Main {
             this.spaceshipdestroyedSound.setBuffer(buffer);
         });
 
-        this.introMusic = new THREE.Audio(this.audioListener);
-        this.audioLoader.load('audio/musicintro.ogg', (buffer) => {
-            this.introMusic.setBuffer(buffer);
-            this.introMusic.onEnded = () => {
-                this.playSound(this.loopMusic);
+        this.stageMusic = new THREE.Audio(this.audioListener);
+        this.audioLoader.load('audio/stagemusic.ogg', (buffer) => {
+            this.stageMusic.setBuffer(buffer);
+            this.stageMusic.onEnded = () => {
+                this.playSound(this.stageMusicLoop);
             };
         });
 
-        this.loopMusic = new THREE.Audio(this.audioListener);
-        this.audioLoader.load('audio/musicloop.ogg', (buffer) => {
-            this.loopMusic.setBuffer(buffer);
-            this.loopMusic.setLoop(true);
+        this.stageMusicLoop = new THREE.Audio(this.audioListener);
+        this.audioLoader.load('audio/stagemusicloop.ogg', (buffer) => {
+            this.stageMusicLoop.setBuffer(buffer);
+            this.stageMusicLoop.setLoop(true);
+        });
+
+        this.endMusic = new THREE.Audio(this.audioListener);
+        this.audioLoader.load('audio/endmusic.ogg', (buffer) => {
+            this.endMusic.setBuffer(buffer);
+            this.endMusic.onEnded = () => {
+                this.playSound(this.endMusicLoop);
+            };
+        });
+
+        this.endMusicLoop = new THREE.Audio(this.audioListener);
+        this.audioLoader.load('audio/endmusicloop.ogg', (buffer) => {
+            this.endMusicLoop.setBuffer(buffer);
+            this.endMusicLoop.setLoop(true);
         });
     }
 
@@ -88,6 +107,12 @@ class Main {
         sound.play();
     }
 
+    stopSound(sound){
+        if (sound.isPlaying) {
+            sound.stop();
+        }
+    }
+
     async setupGame() {
         try {
             await this.loadModels();
@@ -95,87 +120,7 @@ class Main {
         catch (error) {
             console.error('Error while loading Models: ', error);
         }
-        this.startMenu();
-    }
-
-    initGameSettings() {
-        this.timerMinutes = 5;
-        this.timerSeconds = 0;
-        this.asteroidAmount = 10;
-        this.score = 0;
-    }
-
-    startMenu() {
-        this.mainMenu = document.getElementById('main-menu-screen');
-        this.mainMenu.addEventListener('click', () => {
-            if (!this.introMusic.isPlaying) {
-                this.playSound(this.introMusic);
-            }
-        });
-        this.mainMenu.style.display = 'flex';
-        this.initGameSettings();
-        this.initSkybox();
-        this.initAsteroidGroup();
-        this.initSpaceship();
-        this.initMissileGroup();
-        this.hasGameStarted = false;
-        this.update();
-        this.startButton = document.getElementById('start-button');
-        this.startButton.addEventListener('click', () => {
-            this.mainMenu.style.display = 'none';
-            this.startGame();
-        });
-    }
-
-    startGame() {
-        this.hasGameStarted = true;
-        this.scene.add(this.spaceship);
-        this.initHud();
-        this.startTimer();
-    }
-
-    initHud() {
-        this.asteroidTextValue = document.getElementById('asteroid-counter-text-value');
-        this.updateAsteroidCount(this.asteroidAmount);
-
-        this.timeTextValue = document.getElementById('time-text-value');
-
-        this.scoreTextValue = document.getElementById('score-text-value');
-        this.updateScore(this.score);
-
-        this.hud = document.getElementById('hud');
-        this.hud.style.display = 'flex';
-    }
-
-    updateAsteroidCount(amount) {
-        this.asteroidTextValue.textContent = amount;
-    }
-
-    startTimer() {
-        this.endTime = Date.now() + this.timerMinutes * 60 * 1000 + this.timerSeconds * 1000;
-        const timeInterval = setInterval(() => {
-            this.remainingTime = this.endTime - Date.now();
-            if (this.remainingTime > 0) {
-                const minutes = Math.floor(this.remainingTime / 60000);
-                const seconds = Math.floor((this.remainingTime % 60000) / 1000);
-                const formattedMinutes = minutes.toString().padStart(2, '0');
-                const formattedSeconds = seconds.toString().padStart(2, '0');
-                this.formattedTime = `${formattedMinutes}:${formattedSeconds}`;
-            } else {
-                clearInterval(timeInterval);
-                this.formattedTime = '00:00';
-                if (this.spaceship.isSpaceshipReady) {
-                    this.destroySpaceship();
-                }
-            }
-            this.timeTextValue.textContent = this.formattedTime;
-        }, 1000);
-    }
-
-    updateScore(amount) {
-        this.score += amount;
-        this.scoreTextValue.textContent = this.score;
-
+        this.enableStartMenu();
     }
 
     async loadModels() {
@@ -213,6 +158,117 @@ class Main {
         });
     }
 
+    initGameSettings() {
+        this.asteroidAmount = 10;
+        this.timerMinutes = 5;
+        this.timerSeconds = 0;
+        this.score = 0;
+    }
+
+    enableStartMenu() {
+        this.mainMenu = document.getElementById('main-menu-screen');
+        this.mainMenu.addEventListener('click', () => {
+            if (!this.stageMusic.isPlaying) {
+                this.playSound(this.stageMusic);
+            }
+        });
+        this.mainMenu.style.display = 'flex';
+        this.initGameSettings();
+        this.initSkybox();
+        this.initAsteroidGroup();
+        this.initSpaceship();
+        this.spaceship.isSpaceshipReady = false;
+        this.initMissileGroup();
+        this.update();
+        this.startButton = document.getElementById('start-button');
+        this.startButton.addEventListener('click', () => {
+            this.playSound(this.clickSound);
+            this.mainMenu.style.display = 'none';
+            this.canvas.requestPointerLock();
+            this.startGame();
+        });
+    }
+
+    startGame() {
+        this.removeAsteroids();
+        this.initAsteroidGroup();
+        this.hasGameStarted = true;
+        this.spaceship.enableShipControls();
+        this.spaceship.isSpaceshipReady = true;
+        this.scene.add(this.spaceship);
+        this.initHud();
+        this.startTimer(this.timerMinutes, this.timerSeconds);
+    }
+
+    removeAsteroids() {
+        while (this.asteroidGroup.children.length > 0) {
+            const asteroid = this.asteroidGroup.children[0];
+            this.asteroidGroup.remove(asteroid);
+        }
+    }
+
+    enableScoreScreen(){
+        this.stopSound(this.stageMusic);
+        this.stopSound(this.stageMusicLoop);
+        this.playSound(this.endMusic);
+        this.endscoreTextValue = document.getElementById('endscore-text-value');
+        this.endscoreTextValue.textContent = this.score;
+        this.gameOverScreen = document.getElementById('game-over-screen');
+        this.gameOverScreen.style.display = 'flex';
+        this.restartButton = document.getElementById('restart-button');
+        this.restartButton.addEventListener('click', () => {
+            this.playSound(this.clickSound);
+            location.reload();
+        });
+    }
+
+    initHud() {
+        this.asteroidTextValue = document.getElementById('asteroid-counter-text-value');
+        this.updateAsteroidCount(this.asteroidAmount);
+
+        this.timeTextValue = document.getElementById('time-text-value');
+
+        this.scoreTextValue = document.getElementById('score-text-value');
+        this.updateScore(this.score);
+
+        this.hud = document.getElementById('hud');
+        this.hud.style.display = 'flex';
+    }
+
+    updateAsteroidCount(amount) {
+        this.asteroidTextValue.textContent = amount;
+    }
+
+    startTimer(timerMinutes, timerSeconds) {
+        this.endTime = Date.now() + timerMinutes * 60 * 1000 + timerSeconds * 1000;
+        this.timerInterval = setInterval(() => {
+            this.remainingTime = this.endTime - Date.now();
+            if (this.remainingTime > 0) {
+                const minutes = Math.floor(this.remainingTime / 60000);
+                const seconds = Math.floor((this.remainingTime % 60000) / 1000);
+                const formattedMinutes = minutes.toString().padStart(2, '0');
+                const formattedSeconds = seconds.toString().padStart(2, '0');
+                this.formattedTime = `${formattedMinutes}:${formattedSeconds}`;
+            } else {
+                clearInterval(this.timerInterval);
+                this.formattedTime = '00:00';
+                if (this.spaceship.isSpaceshipReady) {
+                    this.destroySpaceship();
+                }
+            }
+            this.timeTextValue.textContent = this.formattedTime;
+        }, 1000);
+    }
+    
+    stopTimer(){
+        clearInterval(this.timerInterval);
+    }
+
+    updateScore(amount) {
+        this.score += amount;
+        this.scoreTextValue.textContent = this.score;
+    }
+
     initSkybox() {
         this.skybox = new Skybox(this.skyboxModel);
         this.skybox.setupSkybox();
@@ -222,6 +278,8 @@ class Main {
     initSpaceship() {
         this.spaceship = new Spaceship(this.spaceshipModel);
         this.spaceship.setupSpaceship();
+        this.spaceship.position.set(0,0,0);
+        this.spaceship.rotation.set(0,0,0);
         this.camera.position.y = 5;
         this.camera.position.z = 15;
         this.spaceship.add(this.camera);
@@ -279,86 +337,99 @@ class Main {
 
     update() {
         requestAnimationFrame(() => this.update());
-        if (this.spaceship) {
-            this.spaceship.update();
-            if (this.hasGameStarted) {
-                if (this.spaceship.isShooting) {
-                    this.spaceship.isShooting = false;
-                    this.fireMissile();
-                    this.playSound(this.shootSound);
+            if (this.spaceship) {
+                this.spaceship.update();
+                if (this.spaceship.isSpaceshipReady) {
+                    if (this.spaceship.isShooting) {
+                        this.spaceship.isShooting = false;
+                        this.fireMissile();
+                        this.playSound(this.shootSound);
+                    }
+                    if(this.asteroidGroup.children.length === 0){
+                        this.winGame();
+                    }
                 }
             }
-        }
-        if (this.skybox) {
-            this.skybox.position.copy(this.spaceship.position);
-        }
+            if (this.skybox) {
+                this.skybox.position.copy(this.spaceship.position);
+            }
 
-        if (this.missileGroup) {
-            this.missileGroup.children.forEach(missile => {
-                missile.update();
-                this.deleteEscapingMissile(missile);
-                this.asteroidGroup.children.forEach(asteroid => {
-                    if (missile.checkCollision(asteroid)) {
-                        this.missileGroup.remove(missile);
-                        asteroid.takeDamage(missile.dealDamage());
-                        this.updateScore(asteroid.getPoints());
-                        if (asteroid.size > 0) {
-                            this.playSound(this.asteroidhitSound);
-                            this.spawnAsteroidFragment(asteroid);
-                            this.updateAsteroidCount(this.asteroidGroup.children.length);
+            if (this.missileGroup) {
+                this.missileGroup.children.forEach(missile => {
+                    missile.update();
+                    this.deleteEscapingMissile(missile);
+                    this.asteroidGroup.children.forEach(asteroid => {
+                        if (missile.checkCollision(asteroid)) {
+                            this.missileGroup.remove(missile);
+                            asteroid.takeDamage(missile.dealDamage());
+                            this.updateScore(asteroid.getPoints());
+                            if (asteroid.size > 0) {
+                                this.playSound(this.asteroidhitSound);
+                                this.spawnAsteroidFragment(asteroid);
+                                this.updateAsteroidCount(this.asteroidGroup.children.length);
+                            }
+                            else {
+                                this.playSound(this.asteroiddestroyedSound);
+                                this.asteroidGroup.remove(asteroid);
+                                this.updateAsteroidCount(this.asteroidGroup.children.length);
+                            }
                         }
-                        else {
-                            this.playSound(this.asteroiddestroyedSound);
-                            this.asteroidGroup.remove(asteroid);
-                            this.updateAsteroidCount(this.asteroidGroup.children.length);
-                        }
-                    }
+                    });
                 });
-            });
-        }
+            }
 
-        if (this.asteroidGroup) {
-            for (let i = 0; i < this.asteroidGroup.children.length; i++) {
-                const asteroid1 = this.asteroidGroup.children[i];
-                asteroid1.update();
-                if (asteroid1.checkCollision(this.spaceship))
-                    if (this.spaceship.isSpaceshipReady) {
-                        this.destroySpaceship();
+            if (this.asteroidGroup) {
+                for (let i = 0; i < this.asteroidGroup.children.length; i++) {
+                    const asteroid1 = this.asteroidGroup.children[i];
+                    asteroid1.update();
+                    if (asteroid1.checkCollision(this.spaceship))
+                        if (this.spaceship.isSpaceshipReady) {
+                            this.destroySpaceship();
+                        }
+                    for (let j = i + 1; j < this.asteroidGroup.children.length; j++) {
+                        const asteroid2 = this.asteroidGroup.children[j];
+                        if (asteroid1.checkCollision(asteroid2)) {
+                            const direction = new THREE.Vector3().subVectors(asteroid1.position, asteroid2.position).normalize();
+                            let velocity1 = new THREE.Vector3().copy(direction).multiplyScalar(asteroid1.speed);
+                            let velocity2 = new THREE.Vector3().copy(direction).multiplyScalar(-asteroid2.speed);
+                            asteroid1.velocity.copy(velocity1);
+                            asteroid2.velocity.copy(velocity2);
+                        }
+                        this.keepAsteroidInPlayfield(asteroid1);
+                        this.keepAsteroidInPlayfield(asteroid2);
                     }
-                for (let j = i + 1; j < this.asteroidGroup.children.length; j++) {
-                    const asteroid2 = this.asteroidGroup.children[j];
-                    if (asteroid1.checkCollision(asteroid2)) {
-                        const direction = new THREE.Vector3().subVectors(asteroid1.position, asteroid2.position).normalize();
-                        let velocity1 = new THREE.Vector3().copy(direction).multiplyScalar(asteroid1.speed);
-                        let velocity2 = new THREE.Vector3().copy(direction).multiplyScalar(-asteroid2.speed);
-                        asteroid1.velocity.copy(velocity1);
-                        asteroid2.velocity.copy(velocity2);
-                    }
-                    this.keepAsteroidInPlayfield(asteroid1);
-                    this.keepAsteroidInPlayfield(asteroid2);
                 }
             }
-        }
+        
         this.renderer.render(this.scene, this.camera);
     }
 
     destroySpaceship() {
-        this.playSound(this.spaceshipdestroyedSound);
+        this.stopTimer();
         this.spaceship.disableShipControls();
         this.spaceship.isSpaceshipReady = false;
-        this.scene.remove(this.spaceship)
+        this.playSound(this.spaceshipdestroyedSound);
         this.hud.style.display = 'none';
-        this.gameOverScreen = document.getElementById('game-over-screen');
-        this.gameOverScreen.style.display = 'flex';
+        this.scene.remove(this.spaceship)
+        this.enableScoreScreen();
+    }
+
+    winGame(){
+        this.stopTimer();
+        this.spaceship.disableShipControls();
+        this.spaceship.isSpaceshipReady = false;
+        this.enableScoreScreen();
     }
 
     keepAsteroidInPlayfield(asteroid) {
-        const asteroidDistance = asteroid.position.distanceTo(this.spaceship.position);
+        const asteroidDistance = asteroid.position.distanceTo(this.skybox.position);
         if (asteroidDistance > 475) {
             const direction = new THREE.Vector3();
-            direction.subVectors(this.spaceship.position, asteroid.position).normalize();
+            direction.subVectors(this.skybox.position, asteroid.position).normalize();
             asteroid.velocity.set(direction.x, direction.y, direction.z);
-            asteroid.velocity.multiplyScalar(this.spaceship.velocity.length() * 1.10);
+            if(this.spaceship.isSpaceshipReady){
+                asteroid.velocity.multiplyScalar(this.spaceship.velocity.length() * 1.10);
+            }
         }
     }
 

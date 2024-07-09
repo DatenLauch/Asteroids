@@ -43,7 +43,6 @@ export default class Spaceship extends THREE.Object3D {
         this.model.position.set(0, 0, 0);
         this.model.scale.set(0.5, 0.5, 0.5);
         this.model.rotation.y = THREE.MathUtils.degToRad(this.yAngleModelOffset);
-        this.enableShipControls();
         this.isSpaceshipReady = true;
     }
 
