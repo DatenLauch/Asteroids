@@ -49,11 +49,13 @@ This work is based on "Missile" (https://sketchfab.com/3d-models/missile-81a345f
 __Music__
 
 "A ray of Hope" as the stage music by doranarasi from the Shmup BGM Pack Vol 1: https://doranarasi.itch.io/shmup-bgm-pack-1
+
 "Connectivity establishment" as the end menu music by doranarasi from the Shmup BGM Pack Vol 1: https://doranarasi.itch.io/shmup-bgm-pack-1
 
 
 
 __Sound__
 
-  *Button Click sound effect are from Atelier Magicae's Pixel UI Sound Effects: https://ateliermagicae.itch.io/pixel-ui-sound-effects
-  *All other Sound effects are from Rubert Spore's classic arcade sound effects: https://yourpalrob.itch.io/classic-arcade-sound-effects
+Button Click sound effect are from Atelier Magicae's Pixel UI Sound Effects: https://ateliermagicae.itch.io/pixel-ui-sound-effects
+
+All other Sound effects are from Rubert Spore's classic arcade sound effects: https://yourpalrob.itch.io/classic-arcade-sound-effects
