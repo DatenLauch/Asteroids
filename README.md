@@ -1,4 +1,4 @@
-# Asteroids
+# Asteroids 3D
 This project is a reinterpretion of the classic retro Asteroids in 3D. The game runs in a browser using WebGL. It has been developed with the three.js library.
 
 
