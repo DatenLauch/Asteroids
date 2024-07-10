@@ -6,14 +6,18 @@ This project is a reinterpretion of the classic retro Asteroids in 3D. The game 
 Just open the index.html with any live server extension of your choice. All necessary files and libraries are already included in this project.
 
 
+## The Goal
+Destroy all Asteroids before the timer runs out. Beware that shooting large asteroids splits them in smaller fragments which are faster and more difficult to hit! 
+
+
 ## Controls
-  * __W__ = accelerate
+__W__ = hold to accelerate
 
-  * __S__ = decelerate
+__S__ = hold to decelerate
 
-  * __Move__ = turn
+__Move Mouse__ = turn the ship
 
-  * __Spacebar__ = shoot
+__Spacebar__ = shoot forwards
 
 
 ## Credits:
