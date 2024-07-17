@@ -7,9 +7,9 @@ This is a reinterpretion of the classic retro Asteroids in 3D. The game runs in 
 Just open the index.html with any live server extension of your choice. All necessary files and libraries are already included in this project.
 
 
-## The Goal
-Destroy all Asteroids before the timer runs out. Beware that shooting large asteroids splits them in smaller fragments which are faster and more difficult to hit! 
+## The Game
 ![asteroids2](https://github.com/user-attachments/assets/3f7d34ac-04ff-4cc9-8b37-f6c5db72cca4)
+Destroy all Asteroids before the timer runs out. Beware that shooting large asteroids splits them in smaller fragments which are faster and more difficult to hit! 
 
 
 ## Controls
