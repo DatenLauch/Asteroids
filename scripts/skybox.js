@@ -37,6 +37,8 @@ export default class Skybox extends THREE.Object3D {
             spotlight.angle = Math.PI / 6;
             //spotlight.decay = 0;
             this.spotlights.add(spotlight);
+            //const spotlightHelper = new THREE.SpotLightHelper(spotlight);
+            //this.add(spotlightHelper);
         });
         this.add(this.spotlights);
     }

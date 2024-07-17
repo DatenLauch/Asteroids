@@ -69,6 +69,11 @@ export default class Spaceship extends THREE.Object3D {
         aimlight.decay = 0;
         aimlight.castShadow = true;
         this.add(aimlight);
+
+        //const headlightHelper = new THREE.SpotLightHelper(headlight);
+        //this.add(headlightHelper);
+        //const aimlightHelper = new THREE.SpotLightHelper(aimlight);
+        //this.add(aimlightHelper);
     }
 
     enableShipControls() {
