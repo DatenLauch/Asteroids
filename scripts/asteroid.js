@@ -21,7 +21,7 @@ export default class Asteroid extends THREE.Object3D {
         this.currentRotationSpeed = this.maxRotationSpeed / (this.size * 2);
 
         this.pointBaseValue = 100;
-        this.points = this.pointBaseValue * (this.initialSize - this.size); // points based on initial size: Large = 33%, Medium = 66%, Small = 100%
+        this.points = this.pointBaseValue;
     }
 
     setupAsteroid() {
@@ -73,7 +73,10 @@ export default class Asteroid extends THREE.Object3D {
     }
 
     getPoints() {
-        return this.points = this.pointBaseValue * (this.initialSize - this.size);
+        if(this.initialSize === this.size)
+            return this.points = this.pointBaseValue;
+        else
+            return this.points = this.pointBaseValue * (this.initialSize - this.size);
     }
 
     checkCollision(collider) {
@@ -86,13 +89,11 @@ export default class Asteroid extends THREE.Object3D {
     takeDamage(damage) {
         if (damage >= this.size) {
             this.size = 0;
-            this.points = this.pointBaseValue * this.initialSize;
         }
         else {
             this.size = this.size - damage;
             this.currentRotationSpeed = this.maxRotationSpeed / this.size;
             this.model.scale.set(this.size, this.size, this.size);
-            this.points = this.pointBaseValue * (this.initialSize - this.size);
             this.setRandomVelocity();
         }
     }

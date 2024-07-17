@@ -24,7 +24,7 @@ export default class Spaceship extends THREE.Object3D {
         this.accelerationMagnitude = 0.010;
         this.isMovingForward = false;
         this.isMovingBackwards = false;
-        this.attackSpeed = 0.5;
+        this.attackSpeed = 2;
 
         this.rotationSpeed = 0.005;
         this.rollIncrement = 2;
@@ -232,7 +232,7 @@ export default class Spaceship extends THREE.Object3D {
                             this.canFire = false;
                             setTimeout(() => {
                                 this.canFire = true;
-                            }, (this.attackSpeed * 1000));
+                            }, (1000 / this.attackSpeed));
                         }
                     }
                     break;

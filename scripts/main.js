@@ -129,6 +129,13 @@ class Main {
         catch (error) {
             console.error('Error while loading Models: ', error);
         }
+        this.initGameSettings();
+        this.initSkybox();
+        this.initAsteroidGroup();
+        this.initSpaceship();
+        this.spaceship.isSpaceshipReady = false;
+        this.initMissileGroup();
+        this.update();
         this.enableStartMenu();
     }
 
@@ -181,13 +188,6 @@ class Main {
             }
         });
         this.mainMenu.style.display = 'flex';
-        this.initGameSettings();
-        this.initSkybox();
-        this.initAsteroidGroup();
-        this.initSpaceship();
-        this.spaceship.isSpaceshipReady = false;
-        this.initMissileGroup();
-        this.update();
         this.startButton = document.getElementById('start-button');
         this.startButton.addEventListener('click', () => {
             this.playSound(this.clickSound);
@@ -366,8 +366,8 @@ class Main {
                 this.asteroidGroup.children.forEach(asteroid => {
                     if (missile.checkCollision(asteroid)) {
                         this.missileGroup.remove(missile);
-                        asteroid.takeDamage(missile.dealDamage());
                         this.updateScore(asteroid.getPoints());
+                        asteroid.takeDamage(missile.dealDamage());
                         if (asteroid.size > 0) {
                             this.playSound(this.asteroidhitSound);
                             this.spawnAsteroidFragment(asteroid);
